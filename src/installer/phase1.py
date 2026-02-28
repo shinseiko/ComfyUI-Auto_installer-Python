@@ -371,7 +371,7 @@ def run_phase1(install_path: Path, install_type: str = "venv", *, verbose: bool 
     """
     log = setup_logger(
         log_file=install_path / "logs" / "install_log.txt",
-        total_steps=9,
+        total_steps=11,
         verbose=verbose,
     )
     log.banner("UmeAiRT", "ComfyUI — Auto-Installer (Phase 1)", __version__)
@@ -397,5 +397,5 @@ def run_phase1(install_path: Path, install_type: str = "venv", *, verbose: bool 
     # Provision config files to install directory
     provision_scripts(install_path, log)
 
-    log.success("Phase 1 complete! Environment is ready.", level=0)
+    log.success("Phase 1 complete — starting installation.", level=1)
     return python_exe
