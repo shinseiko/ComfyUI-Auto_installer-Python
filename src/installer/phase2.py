@@ -185,6 +185,15 @@ def install_custom_nodes(
     manifest = load_manifest(manifest_path)
     install_all_nodes(manifest, custom_nodes_dir, python_exe, log)
 
+    # Copy nunchaku_versions.json into the nunchaku node directory
+    # (the node expects it in its own folder, not in scripts/)
+    nunchaku_src = scripts_dir / "nunchaku_versions.json"
+    nunchaku_dst = custom_nodes_dir / "ComfyUI-nunchaku" / "nunchaku_versions.json"
+    if nunchaku_src.exists() and nunchaku_dst.parent.exists():
+        import shutil
+        shutil.copy2(nunchaku_src, nunchaku_dst)
+        log.sub("  nunchaku_versions.json provisioned.", style="success")
+
 
 def install_wheels(
     python_exe: Path,
