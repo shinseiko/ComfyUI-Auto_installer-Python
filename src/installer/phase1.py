@@ -371,7 +371,7 @@ def run_phase1(install_path: Path, install_type: str = "venv", *, verbose: bool 
     """
     log = setup_logger(
         log_file=install_path / "logs" / "install_log.txt",
-        total_steps=11,
+        total_steps=12,
         verbose=verbose,
     )
     log.banner("UmeAiRT", "ComfyUI — Auto-Installer (Phase 1)", __version__)
