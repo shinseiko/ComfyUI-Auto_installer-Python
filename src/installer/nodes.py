@@ -62,7 +62,6 @@ def _pip_install_requirements(
         log: Logger.
     """
     if check_command_exists("uv"):
-        log.info(f"uv install -r {req_file.name}")
         run_and_log(
             "uv", ["pip", "install", "-r", str(req_file),
                     "--python", str(python_exe)],
@@ -70,7 +69,6 @@ def _pip_install_requirements(
             timeout=300,
         )
     else:
-        log.info(f"pip install -r {req_file.name}")
         run_and_log(
             str(python_exe),
             ["-m", "pip", "install", "-r", str(req_file)],
