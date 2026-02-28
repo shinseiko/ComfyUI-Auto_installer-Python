@@ -38,15 +38,14 @@ def install(
     ),
 ) -> None:
     """Install ComfyUI with all dependencies and custom nodes."""
-    log = setup_logger(
-        log_file=path / "logs" / "install_log.txt",
-        total_steps=9,
-    )
-    log.banner("UmeAiRT", "ComfyUI — Auto-Installer", __version__)
-    console.print("[yellow]⚠ Install command is not yet implemented in the Python version.[/]")
-    console.print(f"  Install path: {path}")
-    console.print(f"  Install type: {install_type}")
-    console.print("\n[dim]This is a placeholder for Phase 3 of the migration.[/]")
+    from src.installer.phase1 import run_phase1
+    from src.installer.phase2 import run_phase2
+
+    # Phase 1: System setup + environment creation
+    python_exe = run_phase1(path, install_type)
+
+    # Phase 2: ComfyUI install + dependencies + custom nodes
+    run_phase2(path, python_exe)
 
 
 @app.command()
@@ -58,14 +57,9 @@ def update(
     ),
 ) -> None:
     """Update ComfyUI, custom nodes, and dependencies."""
-    log = setup_logger(
-        log_file=path / "logs" / "update_log.txt",
-        total_steps=4,
-    )
-    log.banner("UmeAiRT", "ComfyUI — Updater", __version__)
-    console.print("[yellow]⚠ Update command is not yet implemented in the Python version.[/]")
-    console.print(f"  Install path: {path}")
-    console.print("\n[dim]This is a placeholder for Phase 3 of the migration.[/]")
+    from src.installer.updater import run_update
+
+    run_update(path)
 
 
 @app.command(name="download-models")
