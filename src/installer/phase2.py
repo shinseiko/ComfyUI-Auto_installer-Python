@@ -212,24 +212,69 @@ def install_wheels(
             wheel_path.unlink(missing_ok=True)
 
 
-def _check_triton_installed(python_exe: Path) -> bool:
-    """Check if triton is installed in the target venv."""
-    import subprocess
-
+def _check_package_installed(python_exe: Path, package: str) -> str | None:
+    """Check if a package is installed and return its version, or None."""
     result = subprocess.run(
         [str(python_exe), "-c",
-         "from importlib.metadata import version; version('triton-windows')"],
-        capture_output=True, timeout=10,
+         f"from importlib.metadata import version; print(version('{package}'))"],
+        capture_output=True, text=True, timeout=10,
     )
     if result.returncode == 0:
-        return True
+        return result.stdout.strip()
+    return None
 
+
+def _get_cuda_version_from_torch(python_exe: Path) -> str | None:
+    """Detect CUDA version from the installed torch build."""
     result = subprocess.run(
         [str(python_exe), "-c",
-         "from importlib.metadata import version; version('triton')"],
-        capture_output=True, timeout=10,
+         "import torch; print(torch.version.cuda or '')"],
+        capture_output=True, text=True, timeout=30,
     )
-    return result.returncode == 0
+    if result.returncode == 0:
+        ver = result.stdout.strip()
+        return ver if ver else None
+    return None
+
+
+def _get_torch_version(python_exe: Path) -> str | None:
+    """Get the installed PyTorch version string."""
+    result = subprocess.run(
+        [str(python_exe), "-c", "import torch; print(torch.__version__)"],
+        capture_output=True, text=True, timeout=30,
+    )
+    if result.returncode == 0:
+        return result.stdout.strip()
+    return None
+
+
+def _get_triton_constraint(torch_ver: str) -> str:
+    """
+    Get compatible triton-windows version constraint for a PyTorch version.
+
+    Based on triton-windows compatibility matrix:
+    https://github.com/woct0rdho/triton-windows/issues/158
+
+    Credit: DazzleML's comfyui-triton-sageattention installer
+    (https://github.com/DazzleML/comfyui-triton-and-sageattention-installer)
+    """
+    try:
+        parts = torch_ver.split(".")
+        major = int(parts[0])
+        minor = int(parts[1].split("+")[0])  # Handle "+cu128" suffix
+
+        if (major, minor) >= (2, 9):
+            return ">=3.5,<4"
+        elif (major, minor) >= (2, 8):
+            return ">=3.4,<3.5"
+        elif (major, minor) >= (2, 7):
+            return ">=3.3,<3.4"
+        elif (major, minor) >= (2, 6):
+            return ">=3.2,<3.3"
+        else:
+            return "<3.2"
+    except (ValueError, IndexError):
+        return ""  # No constraint if can't parse
 
 
 def install_optimizations(
@@ -239,73 +284,104 @@ def install_optimizations(
     deps: DependenciesConfig,
     log: InstallerLogger,
 ) -> None:
-    """Install Triton and SageAttention optimizations."""
+    """
+    Install Triton and SageAttention optimizations.
+
+    Internalized logic inspired by DazzleML's comfyui-triton-sageattention
+    (https://github.com/DazzleML/comfyui-triton-and-sageattention-installer).
+    No external script is downloaded — all checks and installs happen locally
+    using pip with explicit argument lists.
+    """
     if not detect_nvidia_gpu():
         log.info("No NVIDIA GPU — skipping Triton/SageAttention.")
         return
 
     log.item("Installing Triton and SageAttention...")
 
-    # Check if we're in a conda environment
-    is_conda = bool(os.environ.get("CONDA_PREFIX"))
-
-    if not is_conda:
-        # Venv mode: try DazzleML installer first
-        installer_info = deps.files.installer_script if deps.files else None
-
-        if installer_info and installer_info.url:
-            installer_dest = install_path / installer_info.destination
-            try:
-                download_file(installer_info.url, installer_dest)
-                run_and_log(
-                    str(python_exe),
-                    [str(installer_dest), "--install", "--non-interactive",
-                     "--base-path", str(comfy_path), "--python", str(python_exe)],
-                    ignore_errors=True,
-                    timeout=600,
-                )
-            except Exception as e:
-                log.warning(f"DazzleML installer failed: {e}", level=2)
-
-        # Verify triton is actually installed (DazzleML may exit 0 without success)
-        if not _check_triton_installed(python_exe):
-            log.sub("Triton not found after script — using pip fallback...", style="yellow")
-            _install_triton_sage_manual(python_exe, log)
-        else:
-            log.sub("Triton installed successfully.", style="success")
-    else:
-        _install_triton_sage_manual(python_exe, log)
-
-
-def _install_triton_sage_manual(python_exe: Path, log: InstallerLogger) -> None:
-    """Manual fallback for Triton + SageAttention installation."""
-    # Set CUDA_HOME
+    # Set CUDA_HOME if available
     cuda_path = os.environ.get("CUDA_PATH")
     if cuda_path:
         os.environ["CUDA_HOME"] = cuda_path
 
-    log.sub("Installing Triton...")
-    run_and_log(
-        str(python_exe),
-        ["-m", "pip", "install", "triton-windows", "--no-warn-script-location"],
-        ignore_errors=True,
-    )
+    # Detect CUDA and torch version
+    cuda_ver = _get_cuda_version_from_torch(python_exe)
+    if cuda_ver:
+        log.sub(f"CUDA {cuda_ver} detected from torch.", style="success")
+    else:
+        log.warning("Could not detect CUDA from torch. Triton may not work.", level=2)
 
-    log.sub("Installing SageAttention...")
-    try:
-        run_and_log(
-            str(python_exe),
-            ["-m", "pip", "install", "sageattention",
-             "--no-warn-script-location", "--no-build-isolation"],
-        )
-    except CommandError:
-        log.warning("Standard install failed. Retrying without deps...", level=2)
-        run_and_log(
-            str(python_exe),
-            ["-m", "pip", "install", "sageattention",
-             "--no-deps", "--no-warn-script-location", "--no-build-isolation"],
-            ignore_errors=True,
-        )
+    # --- Triton ---
+    import sys as _sys
+
+    base_package = "triton-windows" if _sys.platform == "win32" else "triton"
+    triton_ver = _check_package_installed(python_exe, base_package)
+    if triton_ver is None and base_package == "triton-windows":
+        triton_ver = _check_package_installed(python_exe, "triton")
+
+    if triton_ver:
+        log.sub(f"Triton already installed: v{triton_ver}", style="success")
+    else:
+        # Determine version constraint from PyTorch
+        torch_ver = _get_torch_version(python_exe)
+        constraint = _get_triton_constraint(torch_ver) if torch_ver else ""
+        package_spec = f"{base_package}{constraint}" if constraint else base_package
+
+        if constraint:
+            log.sub(f"PyTorch {torch_ver} → Triton constraint: {constraint}")
+
+        log.sub(f"Installing {package_spec}...")
+        try:
+            run_and_log(
+                str(python_exe),
+                ["-m", "pip", "install", package_spec,
+                 "--no-warn-script-location"],
+                ignore_errors=True,
+                timeout=300,
+            )
+        except CommandError:
+            log.warning(f"{base_package} install failed.", level=2)
+
+        # Verify
+        triton_ver = _check_package_installed(python_exe, base_package)
+        if triton_ver is None and base_package == "triton-windows":
+            triton_ver = _check_package_installed(python_exe, "triton")
+
+        if triton_ver:
+            log.sub(f"Triton installed: v{triton_ver}", style="success")
+        else:
+            log.warning("Triton could not be installed. SageAttention may be limited.", level=2)
+
+    # --- SageAttention ---
+    sage_ver = _check_package_installed(python_exe, "sageattention")
+
+    if sage_ver:
+        log.sub(f"SageAttention already installed: v{sage_ver}", style="success")
+    else:
+        log.sub("Installing SageAttention...")
+        try:
+            run_and_log(
+                str(python_exe),
+                ["-m", "pip", "install", "sageattention",
+                 "--no-warn-script-location", "--no-build-isolation"],
+                timeout=300,
+            )
+        except CommandError:
+            # Retry without deps (common workaround)
+            log.sub("Retrying SageAttention without deps...", style="yellow")
+            run_and_log(
+                str(python_exe),
+                ["-m", "pip", "install", "sageattention",
+                 "--no-deps", "--no-warn-script-location",
+                 "--no-build-isolation"],
+                ignore_errors=True,
+                timeout=300,
+            )
+
+        sage_ver = _check_package_installed(python_exe, "sageattention")
+        if sage_ver:
+            log.sub(f"SageAttention installed: v{sage_ver}", style="success")
+        else:
+            log.warning("SageAttention could not be installed.", level=2)
 
 
 def install_comfy_settings(
