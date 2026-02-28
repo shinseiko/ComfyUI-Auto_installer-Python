@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 chcp 65001 > nul
 
 :: ============================================================================
@@ -14,7 +14,11 @@ echo           UmeAiRT ComfyUI — Auto-Installer
 echo ============================================================================
 echo.
 
-:: Check for Python
+:: Set install path to where this script is located
+set "InstallPath=%~dp0"
+if "%InstallPath:~-1%"=="\" set "InstallPath=%InstallPath:~0,-1%"
+
+:: --- Check for Python ---
 python --version >nul 2>&1
 if %errorlevel% neq 0 (
     echo [ERROR] Python is not installed or not in PATH.
@@ -29,18 +33,44 @@ if %errorlevel% neq 0 (
 for /f "tokens=2 delims= " %%v in ('python --version 2^>^&1') do set "PY_VERSION=%%v"
 echo [INFO] Found Python %PY_VERSION%
 
-:: Set install path to where this script is located
-set "InstallPath=%~dp0"
-if "%InstallPath:~-1%"=="\" set "InstallPath=%InstallPath:~0,-1%"
+:: --- Check if installer is already installed ---
+set "INSTALLED_VER="
+for /f "delims=" %%v in ('python -c "from src import __version__; print(__version__)" 2^>nul') do set "INSTALLED_VER=%%v"
 
-:: Install the Python package if not already installed
-python -c "import src" >nul 2>&1
-if %errorlevel% neq 0 (
-    echo [INFO] Installing comfyui-installer package...
+:: Get repo version
+set "REPO_VER="
+for /f "delims=" %%v in ('python -c "import re; m=re.search(r'__version__\s*=\s*\"(.+?)\"', open(r'%InstallPath%\src\__init__.py').read()); print(m.group(1) if m else '')" 2^>nul') do set "REPO_VER=%%v"
+
+if defined INSTALLED_VER (
+    echo [INFO] Installed version: %INSTALLED_VER%
+    echo [INFO] Repo version:      %REPO_VER%
+
+    if "%INSTALLED_VER%"=="%REPO_VER%" (
+        echo [INFO] Installer is up to date.
+        echo.
+    ) else (
+        echo.
+        echo [UPDATE] A new version of the installer is available!
+        echo          %INSTALLED_VER% -^> %REPO_VER%
+        echo.
+        set /p "UPDATE_CHOICE=Do you want to update the installer? (Y/N): "
+        if /i "!UPDATE_CHOICE!"=="Y" (
+            echo [INFO] Updating installer...
+            pip install -e "%InstallPath%" --quiet
+            echo [INFO] Updated to %REPO_VER%.
+        ) else (
+            echo [INFO] Continuing with current version %INSTALLED_VER%.
+        )
+        echo.
+    )
+) else (
+    echo [INFO] First install — setting up comfyui-installer...
     pip install -e "%InstallPath%" --quiet
+    echo [INFO] Installer ready.
+    echo.
 )
 
-:: Launch the installer CLI
+:: --- Launch the installer ---
 echo [INFO] Starting installation...
 echo.
 comfyui-installer install --path "%InstallPath%"
