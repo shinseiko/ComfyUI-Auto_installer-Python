@@ -25,27 +25,46 @@ from rich.progress import (
 from src.utils.logging import get_logger
 
 
+# Module-level hint for the install path — set by install.py so _find_aria2c()
+# can search install_path/scripts/aria2/ without needing it as an argument.
+_install_path: Path | None = None
+
+
+def set_install_path(path: Path) -> None:
+    """Set the install path so _find_aria2c() can check scripts/aria2/."""
+    global _install_path
+    _install_path = path
+
+
 def _find_aria2c() -> Path | None:
-    """Locate aria2c executable on the system."""
-    # Check common locations
+    """
+    Locate aria2c executable using a 3-tier search strategy.
+
+    1. System PATH (user-installed or package-manager-installed)
+    2. install_path/scripts/aria2/ (downloaded by a previous run)
+    3. Package-relative scripts/aria2/ (if running from source)
+    """
     import os
     import sys
 
-    candidates: list[Path] = []
-
-    if sys.platform == "win32":
-        local_app = os.environ.get("LOCALAPPDATA", "")
-        if local_app:
-            candidates.append(Path(local_app) / "aria2" / "aria2c.exe")
-
-    # Check PATH
+    # 1. System PATH
     which = shutil.which("aria2c")
     if which:
-        candidates.insert(0, Path(which))
+        return Path(which)
 
-    for path in candidates:
-        if path.exists():
-            return path
+    exe_name = "aria2c.exe" if sys.platform == "win32" else "aria2c"
+
+    # 2. install_path/scripts/aria2/
+    if _install_path is not None:
+        candidate = _install_path / "scripts" / "aria2" / exe_name
+        if candidate.exists():
+            return candidate
+
+    # 3. Package-relative (running from source checkout)
+    package_root = Path(__file__).resolve().parent.parent.parent
+    candidate = package_root / "scripts" / "aria2" / exe_name
+    if candidate.exists():
+        return candidate
 
     return None
 

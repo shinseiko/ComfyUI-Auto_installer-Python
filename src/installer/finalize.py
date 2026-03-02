@@ -1,0 +1,413 @@
+"""
+Installation finalization — Steps 11-12.
+
+Post-install tasks that wrap up the installation:
+
+- **CLI** (Step 11): installs ``comfyui-installer`` into the venv so
+  generated tool scripts (Update, Download-Models) work.
+- **Settings** (Step 11): copies custom ComfyUI UI settings from
+  the local ``scripts/comfy.settings.json``.
+- **Launchers** (Step 11): generates ``.bat`` / ``.sh`` launcher and
+  tool scripts.
+- **Models** (Step 12): offers interactive model pack downloads
+  from ``umeairt_bundles.json``.
+"""
+
+from __future__ import annotations
+
+import sys
+from pathlib import Path
+
+from src.utils.commands import run_and_log
+from src.utils.logging import InstallerLogger
+from src.utils.prompts import confirm
+
+
+def install_cli_in_environment(
+    python_exe: Path,
+    log: InstallerLogger,
+) -> None:
+    """Install the ``comfyui-installer`` CLI into the venv.
+
+    Uses ``pip install -e`` so the CLI stays in sync with the
+    installer source. Required for generated tool scripts
+    (``UmeAiRT-Update.bat``, ``UmeAiRT-Download-Models.bat``).
+
+    Args:
+        python_exe: Path to the venv Python executable.
+        log: Installer logger for user-facing messages.
+    """
+    log.item("Installing comfyui-installer CLI into environment...")
+    installer_root = Path(__file__).resolve().parent.parent.parent
+    run_and_log(
+        str(python_exe),
+        ["-m", "pip", "install", "-e", str(installer_root), "--quiet"],
+    )
+    log.sub("comfyui-installer CLI available in environment.", style="success")
+
+
+def install_comfy_settings(
+    install_path: Path,
+    log: InstallerLogger,
+) -> None:
+    """Copy custom ComfyUI UI settings from the local source.
+
+    Searches for ``comfy.settings.json`` in the source ``scripts/``
+    directory and copies it to ``install_path/user/default/``.
+
+    Args:
+        install_path: Root installation directory.
+        log: Installer logger for user-facing messages.
+    """
+    from src.installer.environment import find_source_scripts
+    import shutil
+
+    source_dir = find_source_scripts()
+    if source_dir is None:
+        log.warning("Source scripts directory not found. Skipping settings.", level=2)
+        return
+
+    settings_src = source_dir / "comfy.settings.json"
+    if not settings_src.exists():
+        log.warning("comfy.settings.json not found in source scripts.", level=2)
+        return
+
+    dest = install_path / "user" / "default" / "comfy.settings.json"
+    dest.parent.mkdir(parents=True, exist_ok=True)
+
+    if dest.exists() and settings_src.stat().st_mtime <= dest.stat().st_mtime:
+        log.sub("ComfyUI settings already up to date.", style="success")
+        return
+
+    shutil.copy2(settings_src, dest)
+    log.item("ComfyUI custom settings provisioned.")
+
+
+def create_launchers(
+    install_path: Path,
+    log: InstallerLogger,
+) -> None:
+    """Generate cross-platform launcher and tool scripts.
+
+    Creates:
+
+    - **Performance launcher**: ``--use-sage-attention --listen --auto-launch``.
+    - **LowVRAM launcher**: same + ``--lowvram --disable-smart-memory --fp8``.
+    - **Tool scripts**: Model Downloader and Updater wrappers.
+
+    On Windows, creates ``.bat`` files; on Linux/macOS ``.sh`` files
+    with the executable bit set.
+
+    Args:
+        install_path: Root installation directory.
+        log: Installer logger for user-facing messages.
+    """
+    log.item("Creating launcher scripts...")
+
+    is_windows = sys.platform == "win32"
+
+    perf_args = "--use-sage-attention --listen --auto-launch"
+    lowvram_args = f"{perf_args} --disable-smart-memory --lowvram --fp8_e4m3fn-text-enc"
+
+    launchers: list[tuple[str, str, str]] = [
+        ("UmeAiRT-Start-ComfyUI", "Performance Mode", perf_args),
+        ("UmeAiRT-Start-ComfyUI_LowVRAM", "Low VRAM / Stability Mode", lowvram_args),
+    ]
+
+    for name, mode_label, args in launchers:
+        if is_windows:
+            _write_bat_launcher(install_path, name, mode_label, args, log)
+        else:
+            _write_sh_launcher(install_path, name, mode_label, args, log)
+
+    # Tool scripts (model downloader, updater)
+    if is_windows:
+        tools: list[tuple[str, str, str]] = [
+            ("UmeAiRT-Download-Models", "Model Downloader",
+             'comfyui-installer download-models --path "%InstallPath%"'),
+            ("UmeAiRT-Update", "Updater",
+             'comfyui-installer update --path "%InstallPath%"'),
+        ]
+        for tool_name, tool_label, tool_cmd in tools:
+            _write_bat_tool(install_path, tool_name, tool_label, tool_cmd, log)
+    else:
+        tools = [
+            ("UmeAiRT-Download-Models", "Model Downloader",
+             'comfyui-installer download-models --path "$SCRIPT_DIR"'),
+            ("UmeAiRT-Update", "Updater",
+             'comfyui-installer update --path "$SCRIPT_DIR"'),
+        ]
+        for tool_name, tool_label, tool_cmd in tools:
+            _write_sh_tool(install_path, tool_name, tool_label, tool_cmd, log)
+
+
+def offer_model_downloads(
+    install_path: Path,
+    log: InstallerLogger,
+) -> None:
+    """Offer interactive model pack downloads via the unified catalog.
+
+    Searches for ``umeairt_bundles.json`` in multiple locations:
+
+    1. ``install_path/scripts/``
+    2. Source ``scripts/`` directory (development checkout).
+    3. Parent of source ``scripts/`` directory.
+
+    If found, prompts the user and delegates to
+    :func:`src.downloader.engine.interactive_download`.
+
+    Args:
+        install_path: Root installation directory.
+        log: Installer logger for user-facing messages.
+    """
+
+    # Search for catalog in multiple locations
+    search_paths = [
+        install_path / "scripts" / "umeairt_bundles.json",
+    ]
+
+    # Also check source scripts directory (running from source checkout)
+    from src.installer.environment import find_source_scripts
+    source_dir = find_source_scripts()
+    if source_dir:
+        search_paths.append(source_dir / "umeairt_bundles.json")
+        search_paths.append(source_dir.parent / "umeairt_bundles.json")
+
+    catalog_path = None
+    for path in search_paths:
+        if path.exists():
+            catalog_path = path
+            break
+
+    if catalog_path is None:
+        log.info("No model catalog found. Searched:")
+        for p in search_paths:
+            log.sub(f"  {p}", style="dim")
+        log.info("You can download models later with: comfyui-installer download-models")
+        return
+
+    log.sub(f"Catalog found: {catalog_path}", style="success")
+
+    if not confirm("Would you like to download model packs now?"):
+        log.sub("Model downloads skipped. You can download later with: comfyui-installer download-models")
+        return
+
+    from src.downloader.engine import interactive_download, load_catalog
+
+    catalog = load_catalog(catalog_path)
+    models_dir = install_path / "models"
+    interactive_download(catalog, models_dir)
+
+
+# ─── Private: Launcher script generators ─────────────────────────────────────
+
+
+def _write_bat_launcher(
+    install_path: Path, name: str, mode_label: str, args: str,
+    log: InstallerLogger,
+) -> None:
+    """Write a Windows ``.bat`` ComfyUI launcher.
+
+    Args:
+        install_path: Root installation directory.
+        name: Script filename without extension.
+        mode_label: Human-readable label (e.g. ``"Performance Mode"``).
+        args: ComfyUI CLI arguments string.
+        log: Installer logger for user-facing messages.
+    """
+    script_path = install_path / f"{name}.bat"
+    content = f"""@echo off
+setlocal
+chcp 65001 > nul
+set "PYTHONPATH="
+set "PYTHONNOUSERSITE=1"
+set "PYTHONUTF8=1"
+
+:: ============================================================================
+:: {name}.bat — {mode_label}
+:: Generated by ComfyUI Auto-Installer
+:: ============================================================================
+
+set "InstallPath=%~dp0"
+if "%InstallPath:~-1%"=="\\" set "InstallPath=%InstallPath:~0,-1%"
+
+:: --- Environment Detection ---
+set "InstallType=venv"
+if exist "%InstallPath%\\scripts\\install_type" (
+    set /p InstallType=<"%InstallPath%\\scripts\\install_type"
+)
+
+if "%InstallType%"=="venv" (
+    echo [INFO] Activating venv...
+    call "%InstallPath%\\scripts\\venv\\Scripts\\activate.bat"
+) else (
+    echo [INFO] Activating Conda...
+    call "%LOCALAPPDATA%\\Miniconda3\\Scripts\\activate.bat"
+    call conda activate UmeAiRT
+)
+
+if %errorlevel% neq 0 (
+    echo [ERROR] Failed to activate environment.
+    pause
+    exit /b %errorlevel%
+)
+
+:: --- Launch ComfyUI ---
+echo [INFO] Starting ComfyUI ({mode_label})...
+cd /d "%InstallPath%\\ComfyUI"
+python main.py {args}
+
+pause
+"""
+    script_path.write_text(content, encoding="utf-8")
+    log.sub(f"{script_path.name} created.", style="success")
+
+
+def _write_sh_launcher(
+    install_path: Path, name: str, mode_label: str, args: str,
+    log: InstallerLogger,
+) -> None:
+    """Write a Linux/macOS ``.sh`` ComfyUI launcher.
+
+    Sets the executable bit after writing.
+
+    Args:
+        install_path: Root installation directory.
+        name: Script filename without extension.
+        mode_label: Human-readable label (e.g. ``"Performance Mode"``).
+        args: ComfyUI CLI arguments string.
+        log: Installer logger for user-facing messages.
+    """
+    script_path = install_path / f"{name}.sh"
+    content = f"""#!/usr/bin/env bash
+# ============================================================================
+# {name}.sh — {mode_label}
+# Generated by ComfyUI Auto-Installer
+# ============================================================================
+
+set -e
+SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
+
+# --- Environment Detection ---
+INSTALL_TYPE="venv"
+if [ -f "$SCRIPT_DIR/scripts/install_type" ]; then
+    INSTALL_TYPE=$(cat "$SCRIPT_DIR/scripts/install_type")
+fi
+
+if [ "$INSTALL_TYPE" = "venv" ]; then
+    echo "[INFO] Activating venv..."
+    source "$SCRIPT_DIR/scripts/venv/bin/activate"
+else
+    echo "[INFO] Activating Conda..."
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate UmeAiRT
+fi
+
+# --- Launch ComfyUI ---
+echo "[INFO] Starting ComfyUI ({mode_label})..."
+cd "$SCRIPT_DIR/ComfyUI"
+python main.py {args}
+"""
+    script_path.write_text(content, encoding="utf-8")
+    # Make executable on Unix
+    import stat
+    script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
+    log.sub(f"{script_path.name} created.", style="success")
+
+
+def _write_bat_tool(
+    install_path: Path, name: str, label: str, command: str,
+    log: InstallerLogger,
+) -> None:
+    """Write a Windows ``.bat`` tool script (updater, downloader).
+
+    Args:
+        install_path: Root installation directory.
+        name: Script filename without extension.
+        label: Human-readable label for the tool.
+        command: CLI command to run inside the activated environment.
+        log: Installer logger for user-facing messages.
+    """
+    script_path = install_path / f"{name}.bat"
+    content = f"""@echo off
+setlocal
+chcp 65001 > nul
+set "PYTHONPATH="
+set "PYTHONNOUSERSITE=1"
+set "PYTHONUTF8=1"
+
+:: ============================================================================
+:: {name}.bat — {label}
+:: Generated by ComfyUI Auto-Installer
+:: ============================================================================
+
+set "InstallPath=%~dp0"
+if "%InstallPath:~-1%"=="\\" set "InstallPath=%InstallPath:~0,-1%"
+
+:: --- Environment Detection ---
+set "InstallType=venv"
+if exist "%InstallPath%\\scripts\\install_type" (
+    set /p InstallType=<"%InstallPath%\\scripts\\install_type"
+)
+
+if "%InstallType%"=="venv" (
+    call "%InstallPath%\\scripts\\venv\\Scripts\\activate.bat"
+) else (
+    call "%LOCALAPPDATA%\\Miniconda3\\Scripts\\activate.bat"
+    call conda activate UmeAiRT
+)
+
+echo [INFO] {label}...
+{command}
+
+pause
+"""
+    script_path.write_text(content, encoding="utf-8")
+    log.sub(f"{script_path.name} created.", style="success")
+
+
+def _write_sh_tool(
+    install_path: Path, name: str, label: str, command: str,
+    log: InstallerLogger,
+) -> None:
+    """Write a Linux/macOS ``.sh`` tool script.
+
+    Sets the executable bit after writing.
+
+    Args:
+        install_path: Root installation directory.
+        name: Script filename without extension.
+        label: Human-readable label for the tool.
+        command: CLI command to run inside the activated environment.
+        log: Installer logger for user-facing messages.
+    """
+    script_path = install_path / f"{name}.sh"
+    content = f"""#!/usr/bin/env bash
+# ============================================================================
+# {name}.sh — {label}
+# Generated by ComfyUI Auto-Installer
+# ============================================================================
+
+set -e
+SCRIPT_DIR="$(cd "$(dirname "${{BASH_SOURCE[0]}}")" && pwd)"
+
+# --- Environment Detection ---
+INSTALL_TYPE="venv"
+if [ -f "$SCRIPT_DIR/scripts/install_type" ]; then
+    INSTALL_TYPE=$(cat "$SCRIPT_DIR/scripts/install_type")
+fi
+
+if [ "$INSTALL_TYPE" = "venv" ]; then
+    source "$SCRIPT_DIR/scripts/venv/bin/activate"
+else
+    source "$(conda info --base)/etc/profile.d/conda.sh"
+    conda activate UmeAiRT
+fi
+
+echo "[INFO] {label}..."
+{command}
+"""
+    script_path.write_text(content, encoding="utf-8")
+    import stat
+    script_path.chmod(script_path.stat().st_mode | stat.S_IEXEC)
+    log.sub(f"{script_path.name} created.", style="success")

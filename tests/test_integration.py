@@ -13,7 +13,6 @@ def test_dependencies_parsing():
     assert "torch" in deps.pip_packages.torch.packages
     assert len(deps.pip_packages.wheels) >= 1
     assert len(deps.pip_packages.standard) >= 5
-    assert deps.files.comfy_settings is not None
 
 
 def test_platform_detection():
@@ -49,17 +48,19 @@ def test_git_available():
 
 def test_installer_modules_import():
     """All installer modules should import without errors."""
-    from src.installer.phase1 import run_phase1, install_aria2, check_prerequisites
-    from src.installer.phase2 import (
-        run_phase2, clone_comfyui, setup_junction_architecture,
-        install_core_dependencies, install_custom_nodes,
-    )
+    from src.installer.install import run_install
+    from src.installer.system import check_prerequisites, ensure_aria2, install_git
+    from src.installer.environment import setup_environment, provision_scripts
+    from src.installer.repository import clone_comfyui, setup_junction_architecture
+    from src.installer.dependencies import install_core_dependencies, install_custom_nodes
+    from src.installer.optimizations import install_optimizations
+    from src.installer.finalize import create_launchers, offer_model_downloads
     from src.installer.updater import run_update, update_comfyui_core
 
 
 def test_check_prerequisites():
     """check_prerequisites should run without crashing."""
-    from src.installer.phase1 import check_prerequisites
+    from src.installer.system import check_prerequisites
     from src.utils.logging import setup_logger
 
     log = setup_logger(total_steps=1)

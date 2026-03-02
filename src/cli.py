@@ -43,14 +43,9 @@ def install(
     ),
 ) -> None:
     """Install ComfyUI with all dependencies and custom nodes."""
-    from src.installer.phase1 import run_phase1
-    from src.installer.phase2 import run_phase2
+    from src.installer.install import run_install
 
-    # Phase 1: System setup + environment creation
-    python_exe = run_phase1(path, install_type, verbose=verbose)
-
-    # Phase 2: ComfyUI install + dependencies + custom nodes
-    run_phase2(path, python_exe)
+    run_install(path, install_type, verbose=verbose)
 
 
 @app.command()
@@ -82,7 +77,7 @@ def download_models(
     catalog_file: Path = typer.Option(
         None,
         "--catalog", "-c",
-        help="Path to model catalog JSON. Defaults to 'umeairt_bundles.json' in install path.",
+        help="Path to model catalog JSON. Defaults to 'scripts/umeairt_bundles.json' in install path.",
     ),
     bundle: str = typer.Option(
         "",
@@ -113,11 +108,11 @@ def download_models(
 
     # Find catalog file
     if catalog_file is None:
-        catalog_file = path / "umeairt_bundles.json"
+        catalog_file = path / "scripts" / "umeairt_bundles.json"
 
     if not catalog_file.exists():
         console.print(f"[red]Catalog not found: {catalog_file}[/]")
-        console.print("[dim]Place umeairt_bundles.json in your install directory or use --catalog.[/]")
+        console.print("[dim]Place umeairt_bundles.json in your install directory's scripts/ folder or use --catalog.[/]")
         raise typer.Exit(1)
 
     catalog = load_catalog(catalog_file)

@@ -52,11 +52,5 @@
       "py-cpuinfo"
     ],
     "git_repos": []
-  },
-  "files": {
-    "comfy_settings": {
-      "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/others/comfy.settings.json",
-      "destination": "user/default/comfy.settings.json"
-    }
   }
 }

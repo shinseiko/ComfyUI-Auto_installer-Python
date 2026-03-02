@@ -1,12 +1,16 @@
 """
 Custom nodes management — additive-only manifest system.
 
-Replaces ComfyUI-Manager snapshots with a simple, reliable engine:
-- Install missing bundled nodes (git clone)
-- Update existing bundled nodes (git pull)
-- Never remove user-installed nodes
+Provides a simple, reliable engine for managing ComfyUI custom nodes:
 
-Uses uv for pip installs when available (10-100x faster).
+- **Install** missing bundled nodes (``git clone``).
+- **Update** existing bundled nodes (``git pull --ff-only``).
+- **Never** remove user-installed nodes.
+
+Uses ``uv`` for pip installs when available (10-100× faster).
+
+The manifest is defined in ``custom_nodes.json`` with the schema
+described by :class:`NodeManifest` and :class:`NodeEntry`.
 """
 
 from __future__ import annotations
@@ -21,7 +25,18 @@ from src.utils.logging import InstallerLogger, get_logger
 
 
 class NodeEntry(BaseModel):
-    """A custom node definition in the manifest."""
+    """A single custom node definition in the manifest.
+
+    Attributes:
+        name: Directory name for the node (used as clone target).
+        url: Git repository URL.
+        required: If ``True``, installed before optional nodes.
+        requirements: Relative path to a ``requirements.txt`` inside
+            the cloned directory (e.g. ``"requirements.txt"``).
+        subfolder: If set, the node lives inside another node's
+            directory (e.g. Impact-Subpack inside Impact-Pack).
+        note: Human-readable comment (not used by the installer).
+    """
 
     name: str
     url: str
@@ -38,7 +53,17 @@ class NodeManifest(BaseModel):
 
 
 def load_manifest(path: Path) -> NodeManifest:
-    """Load and validate the custom_nodes.json manifest."""
+    """Load and validate the ``custom_nodes.json`` manifest.
+
+    Args:
+        path: Absolute path to the JSON manifest file.
+
+    Returns:
+        Validated :class:`NodeManifest` instance.
+
+    Raises:
+        FileNotFoundError: If *path* does not exist.
+    """
     if not path.exists():
         raise FileNotFoundError(f"Node manifest not found: {path}")
 
@@ -83,17 +108,23 @@ def install_node(
     python_exe: Path,
     log: InstallerLogger,
 ) -> bool:
-    """
-    Install a single custom node (git clone + pip install requirements).
+    """Install a single custom node via ``git clone``.
+
+    Clones the repository into ``custom_nodes_dir/node.name``
+    (or ``node.subfolder`` if specified). On network failure,
+    retries up to 3 times with shallow clone.
+
+    After cloning, installs pip requirements if ``node.requirements``
+    is set.
 
     Args:
-        node: The node entry from the manifest.
-        custom_nodes_dir: ComfyUI/custom_nodes directory.
-        python_exe: Python executable for pip installs.
-        log: Logger.
+        node: Node definition from the manifest.
+        custom_nodes_dir: ``ComfyUI/custom_nodes/`` directory.
+        python_exe: Path to the venv Python executable.
+        log: Installer logger for user-facing messages.
 
     Returns:
-        True if installed successfully.
+        ``True`` if the node was installed (or already existed).
     """
     # Handle subfolder nodes (e.g. Impact-Subpack inside Impact-Pack)
     if node.subfolder:
@@ -141,10 +172,19 @@ def update_node(
     python_exe: Path,
     log: InstallerLogger,
 ) -> bool:
-    """
-    Update an existing custom node (git pull + pip install requirements).
+    """Update an existing custom node via ``git pull --ff-only``.
 
-    Returns True if updated, False if not found or failed.
+    If the node is not installed, delegates to :func:`install_node`.
+    Re-installs pip requirements after pulling in case they changed.
+
+    Args:
+        node: Node definition from the manifest.
+        custom_nodes_dir: ``ComfyUI/custom_nodes/`` directory.
+        python_exe: Path to the venv Python executable.
+        log: Installer logger for user-facing messages.
+
+    Returns:
+        ``True`` if updated successfully.
     """
     if node.subfolder:
         node_dir = custom_nodes_dir / node.subfolder
@@ -181,16 +221,20 @@ def install_all_nodes(
     python_exe: Path,
     log: InstallerLogger,
 ) -> tuple[int, int]:
-    """
-    Install all nodes from the manifest.
+    """Install all nodes from the manifest (additive-only).
 
     Only installs missing nodes — existing nodes and user-installed
-    nodes are left untouched.
+    nodes are left untouched. Required nodes are processed first.
+
+    Args:
+        manifest: Validated node manifest.
+        custom_nodes_dir: ``ComfyUI/custom_nodes/`` directory.
+        python_exe: Path to the venv Python executable.
+        log: Installer logger for user-facing messages.
 
     Returns:
-        (success_count, fail_count)
+        Tuple of ``(success_count, fail_count)``.
     """
-    log.step("Installing Custom Nodes")
     log.item(f"{len(manifest.nodes)} nodes in manifest")
 
     custom_nodes_dir.mkdir(parents=True, exist_ok=True)
@@ -217,11 +261,20 @@ def update_all_nodes(
     python_exe: Path,
     log: InstallerLogger,
 ) -> tuple[int, int]:
-    """
-    Update all bundled nodes. User-installed nodes are NEVER touched.
+    """Update all bundled nodes. User-installed nodes are NEVER touched.
+
+    Identifies user-installed nodes (present on disk but not in
+    the manifest) and preserves them. Then updates each manifest
+    node via :func:`update_node`.
+
+    Args:
+        manifest: Validated node manifest.
+        custom_nodes_dir: ``ComfyUI/custom_nodes/`` directory.
+        python_exe: Path to the venv Python executable.
+        log: Installer logger for user-facing messages.
 
     Returns:
-        (success_count, fail_count)
+        Tuple of ``(success_count, fail_count)``.
     """
     log.step("Updating Custom Nodes")
 

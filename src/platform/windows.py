@@ -98,7 +98,13 @@ class WindowsPlatform(Platform):
             pass  # Key doesn't exist yet
 
         if not self.is_admin():
-            log.warning("Long path support requires admin rights.", level=2)
+            log.warning("Long path support is not enabled and requires admin rights.", level=2)
+            log.item("Run this command in an elevated PowerShell to enable it:")
+            log.item(
+                '  Set-ItemProperty -Path "HKLM:\\SYSTEM\\CurrentControlSet\\Control\\FileSystem" '
+                '-Name "LongPathsEnabled" -Value 1 -Type DWord'
+            )
+            log.item("Then restart this installer.")
             return False
 
         try:

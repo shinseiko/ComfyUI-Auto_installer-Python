@@ -1,1 +1,1 @@
-"""Installer modules: phase1, phase2, updater."""
+"""Installer modules: system, environment, repository, dependencies, optimizations, finalize, nodes, updater."""

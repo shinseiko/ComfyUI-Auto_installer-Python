@@ -85,8 +85,9 @@ def get_platform() -> Platform:
 
         return WindowsPlatform()
     elif sys.platform == "linux":
-        # Future: from src.platform.linux import LinuxPlatform
-        raise NotImplementedError("Linux support is planned but not yet implemented.")
+        from src.platform.linux import LinuxPlatform
+
+        return LinuxPlatform()
     elif sys.platform == "darwin":
         # Future: from src.platform.macos import MacOSPlatform
         raise NotImplementedError("macOS support is planned but not yet implemented.")
