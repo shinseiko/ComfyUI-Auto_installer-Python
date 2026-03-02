@@ -5,7 +5,7 @@ from pathlib import Path
 
 import pytest
 
-from src.installer.nodes import NodeEntry, NodeManifest, load_manifest
+from src.installer.nodes import load_manifest
 
 
 @pytest.fixture

@@ -4,6 +4,7 @@ build-backend = "hatchling.build"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src"]
+include = ["src/installer/templates/*.template"]
 
 [project]
 name = "comfyui-auto-installer"

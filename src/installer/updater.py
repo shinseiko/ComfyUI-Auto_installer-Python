@@ -11,14 +11,12 @@ Handles:
 
 from __future__ import annotations
 
-import os
-import subprocess
 from pathlib import Path
 
 from src import __version__
 from src.config import load_dependencies
 from src.utils.commands import CommandError, run_and_log
-from src.utils.logging import InstallerLogger, get_logger, setup_logger
+from src.utils.logging import InstallerLogger, setup_logger
 from src.utils.prompts import confirm
 
 
@@ -150,7 +148,12 @@ def _detect_python(scripts_dir: Path, log: InstallerLogger) -> Path:
                 return venv_py
 
         elif install_type == "conda":
-            conda_py = Path(os.environ.get("LOCALAPPDATA", "")) / "Miniconda3/envs/UmeAiRT/python.exe"
+            conda_env = scripts_dir / "conda_env"
+            if sys.platform == "win32":
+                conda_py = conda_env / "python.exe"
+            else:
+                conda_py = conda_env / "bin" / "python"
+
             if conda_py.exists():
                 log.item(f"Conda Python detected: {conda_py}", style="cyan")
                 return conda_py

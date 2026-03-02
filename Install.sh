@@ -37,6 +37,26 @@ echo "[INFO] Installation path: $INSTALL_PATH"
 echo ""
 
 # ============================================================================
+# Step 1.5: Ask for environment type (venv or conda)
+# ============================================================================
+INSTALL_TYPE="venv"
+echo "What type of Python environment do you want to use?"
+echo "  1: venv (Default, Recommended - isolated, fast)"
+echo "  2: conda (Isolated local prefix via Miniconda)"
+echo ""
+read -rp "Choice (1 or 2, Enter for 1): " ENV_CHOICE
+
+if [ "$ENV_CHOICE" = "2" ]; then
+    INSTALL_TYPE="conda"
+else
+    INSTALL_TYPE="venv"
+fi
+
+echo ""
+echo "[INFO] Environment type: $INSTALL_TYPE"
+echo ""
+
+# ============================================================================
 # Step 2: Ensure uv is available
 # ============================================================================
 if ! command -v uv &>/dev/null; then
@@ -83,4 +103,4 @@ uv pip install -e "$SCRIPT_DIR" --python "$VENV_PY" --quiet
 # ============================================================================
 echo "[INFO] Starting installation..."
 echo ""
-"$VENV_PY" -m src.cli install --path "$INSTALL_PATH"
+"$VENV_PY" -m src.cli install --path "$INSTALL_PATH" --type "$INSTALL_TYPE"

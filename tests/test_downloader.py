@@ -8,14 +8,13 @@ from pathlib import Path
 import pytest
 
 from src.downloader.engine import (
+    PATH_TYPE_MAP,
+    BundleMeta,
     ModelBundle,
-    ModelCatalog,
     ModelFile,
     ModelVariant,
-    BundleMeta,
     load_catalog,
     resolve_file_path,
-    PATH_TYPE_MAP,
 )
 
 

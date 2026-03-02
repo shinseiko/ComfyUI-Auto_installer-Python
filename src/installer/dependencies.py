@@ -144,8 +144,8 @@ def install_custom_nodes(
         install_path: Root installation directory.
         log: Installer logger for user-facing messages.
     """
-    from src.installer.nodes import install_all_nodes, load_manifest
     from src.installer.environment import find_source_scripts
+    from src.installer.nodes import install_all_nodes, load_manifest
 
     scripts_dir = install_path / "scripts"
     custom_nodes_dir = comfy_path / "custom_nodes"

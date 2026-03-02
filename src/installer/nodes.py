@@ -21,7 +21,7 @@ from pathlib import Path
 from pydantic import BaseModel, Field
 
 from src.utils.commands import CommandError, check_command_exists, run_and_log
-from src.utils.logging import InstallerLogger, get_logger
+from src.utils.logging import InstallerLogger
 
 
 class NodeEntry(BaseModel):

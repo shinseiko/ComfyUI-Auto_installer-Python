@@ -97,14 +97,10 @@ def setup_environment(
                 python_path = platform.detect_python("3.13")
 
                 if python_path is None:
-                    # Try to install Python 3.13 (no fallback — wheels are cp313 only)
-                    if sys.platform == "win32" and confirm("Python 3.13 not found. Install automatically?"):
-                        python_path = _install_python_windows(log)
-
-                    if python_path is None:
-                        log.error("Python 3.13 is required (wheels are compiled for cp313).")
-                        log.item("Please install from https://www.python.org/downloads/release/python-31311/")
-                        raise SystemExit(1)
+                    log.error("Python 3.13 is required but could not be acquired.")
+                    log.item("If 'uv' failed, this may be due to network or Antivirus restrictions.")
+                    log.item("Please install it manually from https://www.python.org/downloads/release/python-31311/")
+                    raise SystemExit(1)
 
                 log.item(f"Creating venv with {python_path}...")
                 run_and_log(str(python_path), ["-m", "venv", str(venv_path)])
@@ -124,70 +120,139 @@ def setup_environment(
         log.sub(f"Venv python: {python_exe}", style="success")
         return python_exe
 
+    elif install_type == "conda":
+        conda_env_path = scripts_dir / "conda_env"
+
+        # Determine Python executable path based on OS
+        if sys.platform == "win32":
+            python_exe = conda_env_path / "python.exe"
+        else:
+            python_exe = conda_env_path / "bin" / "python"
+
+        if conda_env_path.exists() and python_exe.exists():
+            log.sub("Conda environment already exists.", style="success")
+            log.sub(f"Conda python: {python_exe}", style="success")
+            return python_exe
+
+        # Find or install Conda
+        conda_exe = _find_conda(log)
+        if not conda_exe:
+            if sys.platform == "win32" and confirm("Conda not found. Install Miniconda automatically?"):
+                conda_exe = _install_miniconda_windows(log)
+
+            if not conda_exe:
+                log.error("Conda is required for this installation type.")
+                log.item("Please install Miniconda from https://docs.anaconda.com/free/miniconda/")
+                raise SystemExit(1)
+
+        # Provision the environment.yml first so conda can use it
+        provision_scripts(install_path, log)
+        env_yml = scripts_dir / "environment.yml"
+
+        if not env_yml.exists():
+            log.error(f"environment.yml not found at {env_yml}")
+            raise SystemExit(1)
+
+        log.item(f"Creating local Conda environment at {conda_env_path}...")
+        try:
+            run_and_log(
+                str(conda_exe),
+                ["env", "create", "-p", str(conda_env_path), "-f", str(env_yml), "-y"]
+            )
+            log.sub("Conda environment created.", style="success")
+        except CommandError:
+            log.error("Failed to create Conda environment.")
+            raise SystemExit(1)
+
+        if not python_exe.exists():
+            log.error(f"Conda python not found at expected path: {python_exe}")
+            raise SystemExit(1)
+
+        log.sub(f"Conda python: {python_exe}", style="success")
+        return python_exe
+
     else:
-        log.warning("Conda support is planned but not yet implemented in the Python version.")
-        log.item("Please use --type venv for now.")
+        log.error(f"Unknown install type: {install_type}")
         raise SystemExit(1)
 
 
-def _install_python_windows(log: InstallerLogger) -> Path | None:
-    """Download and install Python 3.13 on Windows.
 
-    Uses the official Python installer in ``/passive`` mode.
-    After installation, searches well-known paths and the ``py``
-    launcher to locate the new executable.
 
-    Args:
-        log: Installer logger for user-facing messages.
 
-    Returns:
-        Path to the installed ``python.exe``, or ``None`` on failure.
-    """
-    py_url = "https://www.python.org/ftp/python/3.13.11/python-3.13.11-amd64.exe"
-    py_installer = Path(os.environ.get("TEMP", ".")) / "python-3.13.11-amd64.exe"
+def _find_conda(log: InstallerLogger) -> Path | None:
+    """Find the conda executable in the PATH or standard locations."""
+    if check_command_exists("conda"):
+        log.item("Found conda in PATH.")
+        import shutil
+        return Path(shutil.which("conda"))
+
+    candidates = []
+    if sys.platform == "win32":
+        local_app_data = Path(os.environ.get("LOCALAPPDATA", ""))
+        candidates = [
+            local_app_data / "Miniconda3" / "Scripts" / "conda.exe",
+            local_app_data / "anaconda3" / "Scripts" / "conda.exe",
+            Path("C:/ProgramData/Miniconda3/Scripts/conda.exe"),
+            Path("C:/ProgramData/anaconda3/Scripts/conda.exe"),
+            Path("C:/tools/miniconda3/Scripts/conda.exe"),
+        ]
+    else:
+        home = Path.home()
+        candidates = [
+            home / "miniconda3" / "bin" / "conda",
+            home / "anaconda3" / "bin" / "conda",
+            Path("/opt/miniconda3/bin/conda"),
+        ]
+
+    for p in candidates:
+        if p.exists():
+            log.item(f"Found conda at {p}")
+            return p
+
+    return None
+
+
+def _install_miniconda_windows(log: InstallerLogger) -> Path | None:
+    """Download and install Miniconda on Windows in silent mode."""
+    conda_url = "https://repo.anaconda.com/miniconda/Miniconda3-latest-Windows-x86_64.exe"
+    installer_path = Path(os.environ.get("TEMP", ".")) / "Miniconda3-installer.exe"
 
     try:
-        log.item("Downloading Python 3.13...")
-        download_file(py_url, py_installer)
+        log.item("Downloading Miniconda...")
+        download_file(conda_url, installer_path)
 
-        log.sub("Installing Python (this may take a minute)...")
+        install_dir = Path(os.environ.get("LOCALAPPDATA", "")) / "Miniconda3"
+
+        log.sub("Installing Miniconda (this may take a minute)...")
         result = subprocess.run(
-            [str(py_installer), "/passive", "PrependPath=1",
-             "Include_launcher=1", "Include_test=0"],
-            timeout=300,
+            [
+                str(installer_path),
+                "/InstallationType=JustMe",
+                "/RegisterPython=0",
+                "/S",
+                f"/D={install_dir}"
+            ],
+            timeout=600,
         )
 
         if result.returncode == 0:
-            log.success("Python 3.13 installed.", level=2)
+            log.success("Miniconda installed.", level=2)
+            conda_exe = install_dir / "Scripts" / "conda.exe"
+            if conda_exe.exists():
+                # Re-init shell for conda if needed
+                subprocess.run([str(conda_exe), "init"], capture_output=True)
+                return conda_exe
 
-            # Try to find the new installation
-            candidates = [
-                Path(os.environ.get("LOCALAPPDATA", "")) / "Programs/Python/Python313/python.exe",
-                Path("C:/Program Files/Python313/python.exe"),
-            ]
-            for p in candidates:
-                if p.exists():
-                    return p
-
-            # Try py launcher
-            if check_command_exists("py"):
-                try:
-                    r = subprocess.run(
-                        ["py", "-3.13", "-c", "import sys; print(sys.executable)"],
-                        capture_output=True, text=True, timeout=10,
-                    )
-                    if r.returncode == 0:
-                        return Path(r.stdout.strip())
-                except Exception:
-                    pass
-
-        log.error("Python installation failed.")
-        return None
+        log.error("Miniconda silent installation failed.")
+        raise OSError("Non-zero exit code or timeout from installer")
     except Exception as e:
-        log.error(f"Python installation error: {e}")
+        log.error("Miniconda installation failed, likely blocked by Windows UAC or Antivirus.")
+        log.error(f"Error details: {e}")
+        log.item("Please download and install Miniconda manually from:")
+        log.item("https://docs.anaconda.com/free/miniconda/")
         return None
     finally:
-        py_installer.unlink(missing_ok=True)
+        installer_path.unlink(missing_ok=True)
 
 
 def find_source_scripts() -> Path | None:

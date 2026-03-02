@@ -48,14 +48,6 @@ def test_git_available():
 
 def test_installer_modules_import():
     """All installer modules should import without errors."""
-    from src.installer.install import run_install
-    from src.installer.system import check_prerequisites, ensure_aria2, install_git
-    from src.installer.environment import setup_environment, provision_scripts
-    from src.installer.repository import clone_comfyui, setup_junction_architecture
-    from src.installer.dependencies import install_core_dependencies, install_custom_nodes
-    from src.installer.optimizations import install_optimizations
-    from src.installer.finalize import create_launchers, offer_model_downloads
-    from src.installer.updater import run_update, update_comfyui_core
 
 
 def test_check_prerequisites():

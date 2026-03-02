@@ -24,7 +24,6 @@ from rich.progress import (
 
 from src.utils.logging import get_logger
 
-
 # Module-level hint for the install path — set by install.py so _find_aria2c()
 # can search install_path/scripts/aria2/ without needing it as an argument.
 _install_path: Path | None = None
@@ -44,7 +43,6 @@ def _find_aria2c() -> Path | None:
     2. install_path/scripts/aria2/ (downloaded by a previous run)
     3. Package-relative scripts/aria2/ (if running from source)
     """
-    import os
     import sys
 
     # 1. System PATH

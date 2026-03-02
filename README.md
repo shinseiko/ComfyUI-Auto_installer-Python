@@ -9,7 +9,8 @@ Cross-platform Python CLI to fully automate the installation and configuration o
 ## ✨ Features
 
 - **One-Click Install** — Double-click `Install.bat` (Windows) or run `Install.sh` (Linux/macOS)
-- **Smart Environment** — Auto-detects system, creates venv or conda environment
+- **Smart Environment** — Auto-detects system, supports `uv` venv creation (default) or local `conda` prefix installations
+- **Silent UAC Mitigation** — Bypass Windows restrictions gracefully when installing Python/Miniconda
 - **GPU Optimizations** — Installs Triton, SageAttention, and xformers with version compatibility
 - **Curated Custom Nodes** — 30+ essential nodes installed via additive manifest (never removes user-installed nodes)
 - **Model Downloads** — Interactive menu with VRAM-based recommendations (FLUX, WAN, HiDream, LTX, QWEN)
@@ -80,7 +81,7 @@ install_path/
 │   └── main.py
 ├── models/                  # ← User data (persists)
 ├── output/                  # ← User data (persists)
-├── scripts/                 # Config files
+├── scripts/                 # Config files, venv/, and conda_env/
 ├── UmeAiRT-Start-ComfyUI.bat
 └── UmeAiRT-Update.bat
 ```

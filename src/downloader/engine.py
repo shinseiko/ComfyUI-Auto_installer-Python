@@ -20,8 +20,7 @@ from rich.table import Table
 from src.utils.download import download_file
 from src.utils.gpu import display_gpu_recommendations
 from src.utils.logging import console, get_logger
-from src.utils.prompts import ask_choice, confirm
-
+from src.utils.prompts import ask_choice
 
 # ---------------------------------------------------------------------------
 # Path type → directory mapping

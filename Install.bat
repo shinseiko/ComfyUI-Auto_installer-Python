@@ -47,6 +47,26 @@ echo [INFO] Installation path: %InstallPath%
 echo.
 
 :: ============================================================================
+:: Step 1.5: Ask for environment type (venv or conda)
+:: ============================================================================
+set "InstallType=venv"
+echo What type of Python environment do you want to use?
+echo   1: venv (Default, Recommended - isolated, fast)
+echo   2: conda (Isolated local prefix via Miniconda)
+echo.
+set /p "EnvChoice=Choice (1 or 2, Enter for 1): "
+
+if "%EnvChoice%"=="2" (
+    set "InstallType=conda"
+) else (
+    set "InstallType=venv"
+)
+
+echo.
+echo [INFO] Environment type: %InstallType%
+echo.
+
+:: ============================================================================
 :: Step 2: Ensure uv is available (standalone binary, no prerequisites)
 :: ============================================================================
 set "UV_DIR=%InstallPath%\scripts\uv"
@@ -107,6 +127,6 @@ if !errorlevel! neq 0 (
 :: ============================================================================
 echo [INFO] Starting installation...
 echo.
-"%VENV_PY%" -m src.cli install --path "%InstallPath%"
+"%VENV_PY%" -m src.cli install --path "%InstallPath%" --type "%InstallType%"
 
 pause

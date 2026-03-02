@@ -8,7 +8,6 @@ Provides dual output: colored console (via Rich) + timestamped log file.
 from __future__ import annotations
 
 import logging
-from datetime import datetime
 from pathlib import Path
 
 from rich.console import Console

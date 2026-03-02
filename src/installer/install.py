@@ -36,26 +36,25 @@ from pathlib import Path
 
 from src import __version__
 from src.config import load_dependencies
-from src.installer.system import check_prerequisites, ensure_aria2, install_git
-from src.installer.environment import setup_environment, provision_scripts
-from src.installer.repository import setup_git_config, clone_comfyui, setup_junction_architecture
 from src.installer.dependencies import (
     install_core_dependencies,
     install_custom_nodes,
     install_python_packages,
     install_wheels,
 )
-from src.installer.optimizations import install_optimizations
+from src.installer.environment import provision_scripts, setup_environment
 from src.installer.finalize import (
     create_launchers,
     install_cli_in_environment,
     install_comfy_settings,
     offer_model_downloads,
 )
+from src.installer.optimizations import install_optimizations
+from src.installer.repository import clone_comfyui, setup_git_config, setup_junction_architecture
+from src.installer.system import check_prerequisites, ensure_aria2, install_git
 from src.platform.base import get_platform
 from src.utils.download import set_install_path
 from src.utils.logging import setup_logger
-
 
 TOTAL_STEPS = 12
 
@@ -116,9 +115,12 @@ def run_install(
     log.step("Provisioning Configuration")
     provision_scripts(install_path, log)
 
+    # Save the installation type for launchers and tools
+    scripts_dir = install_path / "scripts"
+    (scripts_dir / "install_type").write_text(install_type, encoding="utf-8")
+
     # ── Load dependencies for remaining steps ─────────────────────
     comfy_path = install_path / "ComfyUI"
-    scripts_dir = install_path / "scripts"
     deps_file = scripts_dir / "dependencies.json"
 
     if not deps_file.exists():
