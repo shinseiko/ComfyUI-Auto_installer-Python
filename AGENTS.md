@@ -18,7 +18,7 @@ This project is part of a 6-project ecosystem. **Direct** relationships:
 | `ComfyUI-Auto_installer-Assets` | Installer downloads models from this HuggingFace repo (URLs in `scripts/dependencies.json`) |
 | `ComfyUI-UmeAiRT-Toolkit` | Installed as a custom node via `scripts/custom_nodes.json` |
 | `ComfyUI-UmeAiRT-Sync` | Installed as a custom node; auto-syncs workflows at ComfyUI startup |
-| `ComfyUI-Workflows` | Indirectly distributed via the Sync node; workflows require Toolkit nodes |
+| `ComfyUI-Workflows` | Indirectly distributed via the Sync node; will eventually require Toolkit nodes (not yet integrated) |
 | `UmeAiRT-NAS-Utils` | Orchestration hub — may run inventory/validation scripts against this project |
 
 > ⚠️ **Impact awareness**: Changes to `dependencies.json` or `custom_nodes.json` directly affect what gets downloaded from the Assets and Toolkit repos.
