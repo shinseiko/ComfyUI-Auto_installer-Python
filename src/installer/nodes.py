@@ -16,13 +16,17 @@ described by :class:`NodeManifest` and :class:`NodeEntry`.
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 
 from src.utils.commands import CommandError, run_and_log
-from src.utils.logging import InstallerLogger
 from src.utils.packaging import uv_install
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from src.utils.logging import InstallerLogger
 
 
 class NodeEntry(BaseModel):
@@ -120,10 +124,7 @@ def install_node(
         ``True`` if the node was installed (or already existed).
     """
     # Handle subfolder nodes (e.g. Impact-Subpack inside Impact-Pack)
-    if node.subfolder:
-        node_dir = custom_nodes_dir / node.subfolder
-    else:
-        node_dir = custom_nodes_dir / node.name
+    node_dir = custom_nodes_dir / node.subfolder if node.subfolder else custom_nodes_dir / node.name
 
     if node_dir.exists():
         log.sub(f"  {node.name}: already installed", style="success")
@@ -179,10 +180,7 @@ def update_node(
     Returns:
         ``True`` if updated successfully.
     """
-    if node.subfolder:
-        node_dir = custom_nodes_dir / node.subfolder
-    else:
-        node_dir = custom_nodes_dir / node.name
+    node_dir = custom_nodes_dir / node.subfolder if node.subfolder else custom_nodes_dir / node.name
 
     if not node_dir.exists():
         # Not installed — install it

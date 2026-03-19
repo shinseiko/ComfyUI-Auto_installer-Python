@@ -17,12 +17,15 @@ import shutil
 import subprocess
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.platform.base import get_platform
 from src.utils.commands import CommandError, check_command_exists, run_and_log
 from src.utils.download import download_file
-from src.utils.logging import InstallerLogger
 from src.utils.prompts import confirm
+
+if TYPE_CHECKING:
+    from src.utils.logging import InstallerLogger
 
 
 def setup_environment(
@@ -72,9 +75,8 @@ def setup_environment(
                     log.sub("Virtual environment created via uv.", style="success")
                 except CommandError:
                     log.warning("uv venv creation failed, falling back to system Python.", level=2)
-                    venv_path_exists = False
                 else:
-                    venv_path_exists = True
+                    pass
             else:
                 # Also check for uv in scripts/uv/ (installed by bootstrap)
                 local_uv = scripts_dir / "uv" / ("uv.exe" if sys.platform == "win32" else "uv")
@@ -85,11 +87,10 @@ def setup_environment(
                         log.sub("Virtual environment created via uv.", style="success")
                     except CommandError:
                         log.warning("uv venv creation failed, falling back to system Python.", level=2)
-                        venv_path_exists = False
                     else:
-                        venv_path_exists = True
+                        pass
                 else:
-                    venv_path_exists = False
+                    pass
 
             # Fallback: use system Python if uv didn't create the venv
             if not venv_path.exists():
@@ -162,7 +163,7 @@ def setup_environment(
             log.sub("Conda environment created.", style="success")
         except CommandError:
             log.error("Failed to create Conda environment.")
-            raise SystemExit(1)
+            raise SystemExit(1) from None
 
         if not python_exe.exists():
             log.error(f"Conda python not found at expected path: {python_exe}")

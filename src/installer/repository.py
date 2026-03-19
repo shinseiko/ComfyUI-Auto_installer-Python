@@ -16,12 +16,16 @@ Typical usage::
 from __future__ import annotations
 
 import shutil
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from src.config import DependenciesConfig
 from src.platform.base import get_platform
 from src.utils.commands import CommandError, run_and_log
-from src.utils.logging import InstallerLogger
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from src.config import DependenciesConfig
+    from src.utils.logging import InstallerLogger
 
 # Folders managed by the junction architecture
 EXTERNAL_FOLDERS = ["custom_nodes", "models", "output", "input", "user"]

@@ -32,7 +32,7 @@ Typical usage::
 from __future__ import annotations
 
 import os
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src import __version__
 from src.config import load_dependencies, load_settings
@@ -55,6 +55,9 @@ from src.installer.system import check_prerequisites, ensure_aria2, install_git
 from src.platform.base import get_platform
 from src.utils.download import set_install_path
 from src.utils.logging import setup_logger
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 TOTAL_STEPS = 12
 
@@ -93,7 +96,7 @@ def run_install(
     log.banner("UmeAiRT", "ComfyUI — Auto-Installer", __version__)
 
     # ── Load user settings ────────────────────────────────────────
-    settings = load_settings(install_path / "scripts" / "local-config.json")
+    load_settings(install_path / "scripts" / "local-config.json")
 
     # ── Step 1: System Configuration ──────────────────────────────
     log.step("System Configuration")
@@ -104,9 +107,8 @@ def run_install(
     log.step("Checking Prerequisites")
     set_install_path(install_path)
 
-    if not check_prerequisites(log):
-        if not install_git(log):
-            raise SystemExit(1)
+    if not check_prerequisites(log) and not install_git(log):
+        raise SystemExit(1)
 
     ensure_aria2(install_path, log)
 

@@ -27,7 +27,7 @@ from __future__ import annotations
 
 import json
 import os
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from pydantic import BaseModel, Field
 from rich.table import Table
@@ -36,6 +36,9 @@ from src.utils.download import download_file
 from src.utils.gpu import get_gpu_vram_info
 from src.utils.logging import console, get_logger
 from src.utils.prompts import ask_choice
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Path type → directory mapping
@@ -540,10 +543,7 @@ def _prompt_variants(
         log.item(f"Skipping {display_name}.", style="info")
         return
 
-    if answer == all_letter:
-        selected = variant_list
-    else:
-        selected = [variant_list[ord(answer) - 65]]
+    selected = variant_list if answer == all_letter else [variant_list[ord(answer) - 65]]
 
     for vname in selected:
         variant = bundle.variants[vname]

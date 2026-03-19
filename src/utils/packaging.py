@@ -9,11 +9,14 @@ Replaces all raw ``python -m pip install`` calls across the codebase.
 
 from __future__ import annotations
 
-import subprocess
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from src.utils.commands import CommandError, run_and_log
+from src.utils.commands import run_and_log
 from src.utils.logging import get_logger
+
+if TYPE_CHECKING:
+    import subprocess
+    from pathlib import Path
 
 
 class UvNotFoundError(RuntimeError):

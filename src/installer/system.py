@@ -27,11 +27,14 @@ import subprocess
 import sys
 import zipfile
 from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.utils.commands import check_command_exists
 from src.utils.download import download_file
-from src.utils.logging import InstallerLogger
 from src.utils.prompts import confirm
+
+if TYPE_CHECKING:
+    from src.utils.logging import InstallerLogger
 
 # Minimum Git version for reliable operation (long paths, partial clone, etc.)
 MIN_GIT_VERSION = (2, 39, 0)

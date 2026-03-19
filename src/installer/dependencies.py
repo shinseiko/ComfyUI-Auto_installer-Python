@@ -15,12 +15,16 @@ All installs use ``uv`` — no raw pip.
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from src.config import DependenciesConfig
 from src.utils.download import download_file
-from src.utils.logging import InstallerLogger
 from src.utils.packaging import uv_install
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from src.config import DependenciesConfig
+    from src.utils.logging import InstallerLogger
 
 
 def install_core_dependencies(

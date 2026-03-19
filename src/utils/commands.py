@@ -8,9 +8,12 @@ Uses subprocess.run() with explicit argument lists — no shell injection possib
 from __future__ import annotations
 
 import subprocess
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.utils.logging import get_logger
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class CommandError(Exception):

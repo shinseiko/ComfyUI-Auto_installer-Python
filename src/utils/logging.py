@@ -8,10 +8,13 @@ Provides dual output: colored console (via Rich) + timestamped log file.
 from __future__ import annotations
 
 import logging
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from rich.console import Console
 from rich.theme import Theme
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 # ---------------------------------------------------------------------------
 # Custom Rich theme matching the PowerShell color scheme

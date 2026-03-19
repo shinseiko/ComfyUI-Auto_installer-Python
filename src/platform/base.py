@@ -9,7 +9,10 @@ from __future__ import annotations
 
 import sys
 from abc import ABC, abstractmethod
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class Platform(ABC):

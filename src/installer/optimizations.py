@@ -18,13 +18,17 @@ from __future__ import annotations
 import os
 import subprocess
 import sys
-from pathlib import Path
+from typing import TYPE_CHECKING
 
-from src.config import DependenciesConfig
 from src.utils.commands import CommandError
 from src.utils.gpu import detect_nvidia_gpu
-from src.utils.logging import InstallerLogger
 from src.utils.packaging import uv_install
+
+if TYPE_CHECKING:
+    from pathlib import Path
+
+    from src.config import DependenciesConfig
+    from src.utils.logging import InstallerLogger
 
 
 def _check_package_installed(python_exe: Path, package: str) -> str | None:

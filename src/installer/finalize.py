@@ -17,10 +17,13 @@ from __future__ import annotations
 
 import sys
 from pathlib import Path
+from typing import TYPE_CHECKING
 
-from src.utils.logging import InstallerLogger
 from src.utils.packaging import uv_install
 from src.utils.prompts import confirm
+
+if TYPE_CHECKING:
+    from src.utils.logging import InstallerLogger
 
 
 def install_cli_in_environment(
