@@ -25,6 +25,7 @@ import re
 import shutil
 import subprocess
 import sys
+import tempfile
 import zipfile
 from pathlib import Path
 from typing import TYPE_CHECKING
@@ -128,7 +129,7 @@ def install_git(log: InstallerLogger) -> bool:
 
     log.item("Downloading Git for Windows...")
     git_url = "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
-    git_installer = Path(os.environ.get("TEMP", "/tmp")) / "git-installer.exe"
+    git_installer = Path(tempfile.gettempdir()) / "git-installer.exe"
 
     try:
         download_file(git_url, git_installer)
@@ -224,7 +225,7 @@ def _download_aria2_windows(install_path: Path, log: InstallerLogger) -> bool:
     aria2_dir = install_path / "scripts" / "aria2"
     aria2_exe = aria2_dir / "aria2c.exe"
 
-    zip_path = Path(os.environ.get("TEMP", ".")) / "aria2.zip"
+    zip_path = Path(tempfile.gettempdir()) / "aria2.zip"
     try:
         download_file(aria2_url, zip_path)
         log.sub("Extracting aria2...")
