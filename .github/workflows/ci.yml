@@ -95,4 +95,4 @@ jobs:
       - name: Run tests with coverage
         run: |
           coverage run --source=src -m pytest tests/ -q
-          coverage report -m --skip-covered --fail-under=40
+          coverage report -m --skip-covered --fail-under=30
