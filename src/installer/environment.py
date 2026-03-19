@@ -300,7 +300,7 @@ def provision_scripts(install_path: Path, log: InstallerLogger) -> None:
     ``dependencies.json``). Other configs like ``custom_nodes.json``
     are resolved on-demand by later steps from the source directory.
 
-    Also copies ``umeairt_bundles.json`` to ``install_path/scripts/``
+    Also copies ``model_manifest.json`` to ``install_path/scripts/``
     so the model downloader can find it.
 
     Args:
@@ -339,16 +339,45 @@ def provision_scripts(install_path: Path, log: InstallerLogger) -> None:
             log.sub(f"  {filename}: copied", style="success")
             copied += 1
 
-    # Also copy umeairt_bundles.json to scripts/ for the model downloader
-    bundles_src = source_dir / "umeairt_bundles.json"
-    if not bundles_src.exists():
-        bundles_src = source_dir.parent / "umeairt_bundles.json"
-    bundles_dst = dest_dir / "umeairt_bundles.json"
+    # Download model_manifest.json from Assets repo (HF primary, ModelScope fallback)
+    _provision_bundles_manifest(dest_dir, log)
 
-    if bundles_src.exists():
-        if not bundles_dst.exists() or bundles_src.stat().st_mtime > bundles_dst.stat().st_mtime:
-            shutil.copy2(bundles_src, bundles_dst)
-            log.sub("  umeairt_bundles.json: copied to scripts/", style="success")
-            copied += 1
+    log.item(f"{copied} config file(s) provisioned.")
 
-    log.item(f"{copied} file(s) provisioned.")
+
+# Manifest URLs — the JSON lives in the Assets repo, not the installer.
+_BUNDLES_MANIFEST_URLS = [
+    "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/model_manifest.json",
+    "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/model_manifest.json",
+]
+
+
+def _provision_bundles_manifest(dest_dir: Path, log: InstallerLogger) -> None:
+    """Download ``model_manifest.json`` from the Assets repo.
+
+    Tries HuggingFace first, then ModelScope.  If both fail and a
+    previously-downloaded copy already exists locally, it is kept
+    (offline-safe fallback).
+
+    Args:
+        dest_dir: Target ``scripts/`` directory.
+        log: Installer logger.
+    """
+    bundles_dst = dest_dir / "model_manifest.json"
+
+    try:
+        download_file(
+            _BUNDLES_MANIFEST_URLS,
+            bundles_dst,
+            force=True,  # always fetch latest manifest
+        )
+        log.sub("  model_manifest.json: downloaded from Assets repo", style="success")
+    except RuntimeError:
+        if bundles_dst.exists():
+            log.sub(
+                "  model_manifest.json: remote fetch failed, using existing local copy",
+                style="cyan",
+            )
+        else:
+            log.warning("  model_manifest.json: could not be downloaded (no local copy)", level=2)
+

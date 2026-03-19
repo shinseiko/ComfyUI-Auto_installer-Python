@@ -1,10 +1,10 @@
 """
 ComfyUI Update System.
 
-Migrates Update-ComfyUI.ps1 to Python.
+Migrated to uv — no raw pip.
 Handles:
 - ComfyUI core update (git pull)
-- Custom nodes update via ComfyUI-Manager CLI
+- Custom nodes update via manifest
 - Python dependencies update
 - Triton / SageAttention re-install
 """
@@ -17,6 +17,7 @@ from src import __version__
 from src.config import load_dependencies
 from src.utils.commands import CommandError, run_and_log
 from src.utils.logging import InstallerLogger, setup_logger
+from src.utils.packaging import uv_install
 from src.utils.prompts import confirm
 
 
@@ -64,7 +65,7 @@ def update_dependencies(
     install_path: Path,
     log: InstallerLogger,
 ) -> None:
-    """Update Python dependencies."""
+    """Update Python dependencies via uv."""
     log.step("Updating Python Dependencies")
 
     deps_file = install_path / "scripts" / "dependencies.json"
@@ -74,27 +75,21 @@ def update_dependencies(
 
     deps = load_dependencies(deps_file)
 
-    # Upgrade pip
-    log.item("Upgrading pip...")
-    run_and_log(
-        str(python_exe),
-        ["-m", "pip", "install", "--upgrade"] + deps.pip_packages.upgrade,
-    )
-
     # Update ComfyUI requirements
     req_file = comfy_path / deps.pip_packages.comfyui_requirements
     if req_file.exists():
         log.item("Updating ComfyUI requirements...")
-        run_and_log(str(python_exe), ["-m", "pip", "install", "-r", str(req_file), "--upgrade"])
+        uv_install(python_exe, requirements=req_file, upgrade=True)
 
     # Update torch
     if confirm("Update PyTorch? (Only if there's a new CUDA version)"):
         torch_pkgs = deps.pip_packages.torch.packages.split()
         log.item("Updating PyTorch...")
-        run_and_log(
-            str(python_exe),
-            ["-m", "pip", "install", "--upgrade"] + torch_pkgs
-            + ["--index-url", deps.pip_packages.torch.index_url],
+        uv_install(
+            python_exe,
+            torch_pkgs,
+            index_url=deps.pip_packages.torch.index_url,
+            upgrade=True,
         )
 
 

@@ -1,5 +1,5 @@
 @echo off
-setlocal
+setlocal EnableDelayedExpansion
 chcp 65001 > nul
 set "PYTHONPATH="
 set "PYTHONNOUSERSITE=1"
@@ -16,7 +16,7 @@ if "%InstallPath:~-1%"=="\\" set "InstallPath=%InstallPath:~0,-1%"
 :: --- Environment Detection ---
 set "InstallType=venv"
 if exist "%InstallPath%\scripts\install_type" (
-    set /p InstallType=<"%InstallPath%\scripts\install_type"
+    set /p InstallType<"%InstallPath%\scripts\install_type"
 )
 
 if "%InstallType%"=="venv" (
@@ -45,9 +45,32 @@ if %errorlevel% neq 0 (
     exit /b %errorlevel%
 )
 
+:: --- Network Mode (saved after first choice) ---
+set "LISTEN_CFG=%InstallPath%\scripts\listen_address"
+set "LISTEN_ADDR=127.0.0.1"
+
+if exist "%LISTEN_CFG%" (
+    set /p LISTEN_ADDR=<"%LISTEN_CFG%"
+) else (
+    echo.
+    echo   === Network Access Mode ===
+    echo.
+    echo   1. Local  ^(127.0.0.1^)  - PC local only ^(default^)
+    echo   2. Open   ^(0.0.0.0^)   - RunPod / cloud / LAN
+    echo.
+    set /p "NETWORK_CHOICE=  Select [1/2] (default: 1): "
+    if "!NETWORK_CHOICE!"=="2" (
+        set "LISTEN_ADDR=0.0.0.0"
+    )
+    echo !LISTEN_ADDR!> "%LISTEN_CFG%"
+    echo   [INFO] Saved to %LISTEN_CFG%
+    echo   [INFO] To change later, delete this file and relaunch.
+    echo.
+)
+
 :: --- Launch ComfyUI ---
-echo [INFO] Starting ComfyUI ({mode_label})...
+echo [INFO] Starting ComfyUI ({mode_label}) on %LISTEN_ADDR%...
 cd /d "%InstallPath%\ComfyUI"
-python main.py {args}
+python main.py {args} --listen %LISTEN_ADDR%
 
 pause

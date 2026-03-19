@@ -10,7 +10,7 @@ Post-install tasks that wrap up the installation:
 - **Launchers** (Step 11): generates ``.bat`` / ``.sh`` launcher and
   tool scripts.
 - **Models** (Step 12): offers interactive model pack downloads
-  from ``umeairt_bundles.json``.
+  from ``model_manifest.json``.
 """
 
 from __future__ import annotations
@@ -18,8 +18,8 @@ from __future__ import annotations
 import sys
 from pathlib import Path
 
-from src.utils.commands import run_and_log
 from src.utils.logging import InstallerLogger
+from src.utils.packaging import uv_install
 from src.utils.prompts import confirm
 
 
@@ -39,10 +39,7 @@ def install_cli_in_environment(
     """
     log.item("Installing comfyui-installer CLI into environment...")
     installer_root = Path(__file__).resolve().parent.parent.parent
-    run_and_log(
-        str(python_exe),
-        ["-m", "pip", "install", "-e", str(installer_root), "--quiet"],
-    )
+    uv_install(python_exe, editable=installer_root)
     log.sub("comfyui-installer CLI available in environment.", style="success")
 
 
@@ -92,9 +89,14 @@ def create_launchers(
 
     Creates:
 
-    - **Performance launcher**: ``--use-sage-attention --listen --auto-launch``.
+    - **Performance launcher**: ``--use-sage-attention --auto-launch``
+      + interactive network mode prompt (local/open).
     - **LowVRAM launcher**: same + ``--lowvram --disable-smart-memory --fp8``.
     - **Tool scripts**: Model Downloader and Updater wrappers.
+
+    The ``--listen`` address is chosen by the user at launch time
+    via the prompt embedded in each launcher script (default: local
+    ``127.0.0.1``, option ``0.0.0.0`` for RunPod/cloud).
 
     On Windows, creates ``.bat`` files; on Linux/macOS ``.sh`` files
     with the executable bit set.
@@ -107,7 +109,7 @@ def create_launchers(
 
     is_windows = sys.platform == "win32"
 
-    perf_args = "--use-sage-attention --listen --auto-launch"
+    perf_args = "--use-sage-attention --auto-launch"
     lowvram_args = f"{perf_args} --disable-smart-memory --lowvram --fp8_e4m3fn-text-enc"
 
     launchers: list[tuple[str, str, str]] = [
@@ -148,7 +150,7 @@ def offer_model_downloads(
 ) -> None:
     """Offer interactive model pack downloads via the unified catalog.
 
-    Searches for ``umeairt_bundles.json`` in multiple locations:
+    Searches for ``model_manifest.json`` in multiple locations:
 
     1. ``install_path/scripts/``
     2. Source ``scripts/`` directory (development checkout).
@@ -164,15 +166,15 @@ def offer_model_downloads(
 
     # Search for catalog in multiple locations
     search_paths = [
-        install_path / "scripts" / "umeairt_bundles.json",
+        install_path / "scripts" / "model_manifest.json",
     ]
 
     # Also check source scripts directory (running from source checkout)
     from src.installer.environment import find_source_scripts
     source_dir = find_source_scripts()
     if source_dir:
-        search_paths.append(source_dir / "umeairt_bundles.json")
-        search_paths.append(source_dir.parent / "umeairt_bundles.json")
+        search_paths.append(source_dir / "model_manifest.json")
+        search_paths.append(source_dir.parent / "model_manifest.json")
 
     catalog_path = None
     for path in search_paths:

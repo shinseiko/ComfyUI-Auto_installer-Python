@@ -100,8 +100,11 @@ def _download_with_aria2c(
     args = [
         str(aria2c_path),
         "--console-log-level=warn",
+        "--summary-interval=0",
+        "--show-console-readout=true",
+        "--continue=true",
+        "--auto-file-renaming=false",
         "--disable-ipv6",
-        "--quiet=true",
         "-x", "16",
         "-s", "16",
         "-k", "1M",
@@ -115,14 +118,12 @@ def _download_with_aria2c(
     try:
         result = subprocess.run(
             args,
-            capture_output=True,
-            text=True,
             timeout=3600,  # 1 hour timeout
         )
         if result.returncode == 0:
             return True
         else:
-            log.info(f"aria2c failed (code {result.returncode}): {result.stderr[:200]}")
+            log.info(f"aria2c failed (code {result.returncode})")
             return False
     except (subprocess.TimeoutExpired, FileNotFoundError, OSError) as e:
         log.info(f"aria2c error: {e}")
@@ -157,20 +158,24 @@ def _download_with_httpx(url: str, dest: Path) -> None:
 
 
 def download_file(
-    url: str,
+    url: str | list[str],
     dest: Path | str,
     *,
     checksum: str | None = None,
     force: bool = False,
 ) -> Path:
     """
-    Download a file from a URL to a destination path.
+    Download a file from one or more URLs to a destination path.
+
+    When *url* is a list, each URL is tried in order — the first successful
+    download wins.  This enables transparent HuggingFace → ModelScope failover.
 
     Tries aria2c first for speed, then falls back to httpx.
     Optionally verifies SHA256 checksum after download.
 
     Args:
-        url: Source URL to download from.
+        url: Source URL(s) to download from. Pass a list for multi-source
+            fallback (e.g. ``[hf_url, ms_url]``).
         dest: Destination file path.
         checksum: Optional SHA256 hex digest for verification.
         force: If True, re-download even if file exists.
@@ -179,41 +184,71 @@ def download_file(
         Path to the downloaded file.
 
     Raises:
-        RuntimeError: If download fails or checksum doesn't match.
+        RuntimeError: If all URLs fail or checksum doesn't match.
     """
     dest = Path(dest)
     log = get_logger()
 
+    # Normalise to list
+    urls: list[str] = [url] if isinstance(url, str) else list(url)
+    if not urls:
+        raise RuntimeError("download_file: no URL provided.")
+
     # Skip if already exists (and no checksum to verify or checksum matches)
+    aria2_control = dest.with_suffix(dest.suffix + ".aria2")
     if dest.exists() and not force:
-        if checksum and not verify_checksum(dest, checksum):
+        # If an aria2 control file exists, the previous download was interrupted
+        if aria2_control.exists():
+            log.warning(f"Incomplete download detected for '{dest.name}', resuming...", level=2)
+        elif checksum and not verify_checksum(dest, checksum):
             log.warning(f"Checksum mismatch for existing '{dest.name}', re-downloading...", level=2)
         else:
-            log.sub(f"File '{dest.name}' already exists. Skipping download.", style="success")
+            log.sub(f"'{dest.name}' already exists, skipping.", style="success")
             return dest
-
-    log.sub(f"Downloading \"{url.split('/')[-1]}\"", style="debug")
 
     dest.parent.mkdir(parents=True, exist_ok=True)
 
-    # Try aria2c first
-    aria2c = _find_aria2c()
-    downloaded = False
+    # Try each URL in order
+    last_error: Exception | None = None
+    for i, source_url in enumerate(urls):
+        source_label = source_url.split("/")[2] if "/" in source_url else "unknown"
+        if i > 0:
+            log.info(f"Trying fallback source ({source_label})...")
 
-    if aria2c:
-        downloaded = _download_with_aria2c(url, dest, aria2c)
-        if downloaded:
-            log.info("Download successful (aria2c).")
+        log.sub(f"Downloading \"{source_url.split('/')[-1]}\"", style="debug")
 
-    # Fallback to httpx
-    if not downloaded:
-        if aria2c:
-            log.info("aria2c failed, falling back to httpx...")
         try:
-            _download_with_httpx(url, dest)
-            log.info("Download successful (httpx).")
-        except (httpx.HTTPError, OSError) as e:
-            raise RuntimeError(f"Download failed for '{url}': {e}") from e
+            # Try aria2c first
+            aria2c = _find_aria2c()
+            downloaded = False
+
+            if aria2c:
+                downloaded = _download_with_aria2c(source_url, dest, aria2c)
+                if downloaded:
+                    log.info("Download successful (aria2c).")
+
+            # Fallback to httpx
+            if not downloaded:
+                if aria2c:
+                    log.info("aria2c failed, falling back to httpx...")
+                _download_with_httpx(source_url, dest)
+                log.info("Download successful (httpx).")
+
+            # If we got here, download succeeded — break out
+            last_error = None
+            break
+
+        except (httpx.HTTPError, OSError, RuntimeError) as e:
+            last_error = e
+            log.info(f"Source {source_label} failed: {e}")
+            # Clean up partial file before trying next source
+            dest.unlink(missing_ok=True)
+            continue
+
+    if last_error is not None:
+        raise RuntimeError(
+            f"Download failed for '{dest.name}' from all {len(urls)} source(s): {last_error}"
+        ) from last_error
 
     # Verify checksum
     if checksum:
@@ -226,3 +261,4 @@ def download_file(
         log.info("Checksum verified ✓")
 
     return dest
+

@@ -7,7 +7,7 @@ Provides a simple, reliable engine for managing ComfyUI custom nodes:
 - **Update** existing bundled nodes (``git pull --ff-only``).
 - **Never** remove user-installed nodes.
 
-Uses ``uv`` for pip installs when available (10-100× faster).
+Uses ``uv`` exclusively for package installs.
 
 The manifest is defined in ``custom_nodes.json`` with the schema
 described by :class:`NodeManifest` and :class:`NodeEntry`.
@@ -20,8 +20,9 @@ from pathlib import Path
 
 from pydantic import BaseModel, Field
 
-from src.utils.commands import CommandError, check_command_exists, run_and_log
+from src.utils.commands import CommandError, run_and_log
 from src.utils.logging import InstallerLogger
+from src.utils.packaging import uv_install
 
 
 class NodeEntry(BaseModel):
@@ -79,27 +80,19 @@ def _pip_install_requirements(
     log: InstallerLogger,
 ) -> None:
     """
-    Install requirements using uv (fast) or pip (fallback).
+    Install requirements via uv.
 
     Args:
         python_exe: Path to the Python executable.
         req_file: Path to requirements.txt file.
         log: Logger.
     """
-    if check_command_exists("uv"):
-        run_and_log(
-            "uv", ["pip", "install", "-r", str(req_file),
-                    "--python", str(python_exe)],
-            ignore_errors=True,
-            timeout=300,
-        )
-    else:
-        run_and_log(
-            str(python_exe),
-            ["-m", "pip", "install", "-r", str(req_file)],
-            ignore_errors=True,
-            timeout=300,
-        )
+    uv_install(
+        python_exe,
+        requirements=req_file,
+        ignore_errors=True,
+        timeout=300,
+    )
 
 
 def install_node(

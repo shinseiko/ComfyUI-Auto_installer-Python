@@ -35,7 +35,7 @@ import os
 from pathlib import Path
 
 from src import __version__
-from src.config import load_dependencies
+from src.config import load_dependencies, load_settings
 from src.installer.dependencies import (
     install_core_dependencies,
     install_custom_nodes,
@@ -77,7 +77,7 @@ def run_install(
         install_type: Environment type — ``"venv"`` (default) or
             ``"conda"`` (not yet implemented).
         verbose: If ``True``, show full subprocess output during
-            pip installs and git clones.
+            installs and git clones.
 
     Raises:
         SystemExit: On missing prerequisites or fatal errors.
@@ -91,6 +91,9 @@ def run_install(
         verbose=verbose,
     )
     log.banner("UmeAiRT", "ComfyUI — Auto-Installer", __version__)
+
+    # ── Load user settings ────────────────────────────────────────
+    settings = load_settings(install_path / "scripts" / "local-config.json")
 
     # ── Step 1: System Configuration ──────────────────────────────
     log.step("System Configuration")
@@ -173,3 +176,4 @@ def run_install(
     log.step("Installation Complete!")
     log.success("ComfyUI and all components have been installed.", level=1)
     log.item("Double-click UmeAiRT-Start-ComfyUI to launch!")
+

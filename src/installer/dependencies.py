@@ -3,12 +3,14 @@ Python dependency management — Steps 7-9.
 
 Installs all Python packages required by ComfyUI:
 
-- **Core** (Step 7): pip upgrade, PyTorch with CUDA index, ComfyUI
+- **Core** (Step 7): PyTorch with CUDA index, ComfyUI
   ``requirements.txt``.
-- **Standard + Wheels** (Step 8): additional pip packages and
+- **Standard + Wheels** (Step 8): additional packages and
   pre-built ``.whl`` files (e.g. Nunchaku, InsightFace).
 - **Custom Nodes** (Step 9): delegates to :mod:`src.installer.nodes`
   for Git-clone-based node installation.
+
+All installs use ``uv`` — no raw pip.
 """
 
 from __future__ import annotations
@@ -16,9 +18,9 @@ from __future__ import annotations
 from pathlib import Path
 
 from src.config import DependenciesConfig
-from src.utils.commands import run_and_log
 from src.utils.download import download_file
 from src.utils.logging import InstallerLogger
+from src.utils.packaging import uv_install
 
 
 def install_core_dependencies(
@@ -27,13 +29,12 @@ def install_core_dependencies(
     deps: DependenciesConfig,
     log: InstallerLogger,
 ) -> None:
-    """Install pip, PyTorch, and ComfyUI requirements.
+    """Install PyTorch and ComfyUI requirements.
 
-    Performs three sub-steps:
+    Performs two sub-steps:
 
-    1. Upgrade pip and wheel.
-    2. Install PyTorch packages from the CUDA index URL.
-    3. Install ComfyUI's own ``requirements.txt``.
+    1. Install PyTorch packages from the CUDA index URL.
+    2. Install ComfyUI's own ``requirements.txt``.
 
     Args:
         python_exe: Path to the venv Python executable.
@@ -42,28 +43,20 @@ def install_core_dependencies(
         log: Installer logger for user-facing messages.
     """
 
-    # Upgrade pip and wheel
-    upgrade_pkgs = " ".join(deps.pip_packages.upgrade)
-    log.item(f"Upgrading {upgrade_pkgs}...")
-    run_and_log(
-        str(python_exe),
-        ["-m", "pip", "install", "--upgrade"] + deps.pip_packages.upgrade,
-    )
-
     # PyTorch
     torch_pkgs = deps.pip_packages.torch.packages.split()
     log.item(f"Installing PyTorch ({', '.join(torch_pkgs)})...")
-    run_and_log(
-        str(python_exe),
-        ["-m", "pip", "install"] + torch_pkgs
-        + ["--index-url", deps.pip_packages.torch.index_url],
+    uv_install(
+        python_exe,
+        torch_pkgs,
+        index_url=deps.pip_packages.torch.index_url,
     )
 
     # ComfyUI requirements
     req_file = comfy_path / deps.pip_packages.comfyui_requirements
     if req_file.exists():
         log.item("Installing ComfyUI requirements...")
-        run_and_log(str(python_exe), ["-m", "pip", "install", "-r", str(req_file)])
+        uv_install(python_exe, requirements=req_file)
 
 
 def install_python_packages(
@@ -71,7 +64,7 @@ def install_python_packages(
     deps: DependenciesConfig,
     log: InstallerLogger,
 ) -> None:
-    """Install additional standard pip packages listed in *deps*.
+    """Install additional standard packages listed in *deps*.
 
     Args:
         python_exe: Path to the venv Python executable.
@@ -81,10 +74,7 @@ def install_python_packages(
 
     if deps.pip_packages.standard:
         log.item(f"Installing {len(deps.pip_packages.standard)} standard packages...")
-        run_and_log(
-            str(python_exe),
-            ["-m", "pip", "install"] + deps.pip_packages.standard,
-        )
+        uv_install(python_exe, deps.pip_packages.standard)
 
 
 def install_wheels(
@@ -95,7 +85,7 @@ def install_wheels(
 ) -> None:
     """Download and install pre-built ``.whl`` packages.
 
-    Each wheel is downloaded to ``scripts/``, installed via pip,
+    Each wheel is downloaded to ``scripts/``, installed via uv,
     then deleted to save disk space.
 
     Args:
@@ -116,7 +106,7 @@ def install_wheels(
 
         try:
             download_file(wheel.url, wheel_path)
-            run_and_log(str(python_exe), ["-m", "pip", "install", str(wheel_path)], ignore_errors=True)
+            uv_install(python_exe, [str(wheel_path)], ignore_errors=True)
         except Exception as e:
             log.warning(f"Failed to install {wheel.name}: {e}", level=3)
         finally:

@@ -15,10 +15,7 @@
     }
   },
   "pip_packages": {
-    "upgrade": [
-      "pip",
-      "wheel"
-    ],
+    "upgrade": [],
     "torch": {
       "packages": "torch==2.10.0+cu130 torchvision torchaudio xformers",
       "index_url": "https://download.pytorch.org/whl/cu130"
@@ -52,5 +49,21 @@
       "py-cpuinfo"
     ],
     "git_repos": []
+  },
+  "optimizations": {
+    "triton": {
+      "windows_package": "triton-windows",
+      "linux_package": "triton",
+      "version_constraints": {
+        "2.10": ">=3.5,<4",
+        "2.9": ">=3.5,<4",
+        "2.8": ">=3.4,<3.5",
+        "2.7": ">=3.3,<3.4",
+        "2.6": ">=3.2,<3.3"
+      }
+    },
+    "sageattention": {
+      "pypi_package": "sageattention"
+    }
   }
 }

@@ -60,3 +60,9 @@ select = ["E", "F", "W", "I", "N", "UP", "B", "SIM", "TCH"]
 [tool.pytest.ini_options]
 testpaths = ["tests"]
 pythonpath = ["."]
+
+[tool.bandit]
+exclude_dirs = ["tests"]
+
+[tool.bandit.assert_used]
+skips = ["*/test_*.py"]

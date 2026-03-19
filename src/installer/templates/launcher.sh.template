@@ -31,7 +31,30 @@ else
     conda activate "$SCRIPT_DIR/scripts/conda_env"
 fi
 
+# --- Network Mode (saved after first choice) ---
+LISTEN_CFG="$SCRIPT_DIR/scripts/listen_address"
+LISTEN_ADDR="127.0.0.1"
+
+if [ -f "$LISTEN_CFG" ]; then
+    LISTEN_ADDR=$(cat "$LISTEN_CFG")
+else
+    echo ""
+    echo "  === Network Access Mode ==="
+    echo ""
+    echo "  1. Local  (127.0.0.1)  - PC local only (default)"
+    echo "  2. Open   (0.0.0.0)   - RunPod / cloud / LAN"
+    echo ""
+    read -r -p "  Select [1/2] (default: 1): " NETWORK_CHOICE
+    if [ "$NETWORK_CHOICE" = "2" ]; then
+        LISTEN_ADDR="0.0.0.0"
+    fi
+    echo "$LISTEN_ADDR" > "$LISTEN_CFG"
+    echo "  [INFO] Saved to $LISTEN_CFG"
+    echo "  [INFO] To change later, delete this file and relaunch."
+    echo ""
+fi
+
 # --- Launch ComfyUI ---
-echo "[INFO] Starting ComfyUI ({mode_label})..."
+echo "[INFO] Starting ComfyUI ({mode_label}) on $LISTEN_ADDR..."
 cd "$SCRIPT_DIR/ComfyUI"
-python main.py {args}
+python main.py {args} --listen "$LISTEN_ADDR"

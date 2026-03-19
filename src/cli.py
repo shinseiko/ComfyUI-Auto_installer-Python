@@ -77,7 +77,7 @@ def download_models(
     catalog_file: Path = typer.Option(
         None,
         "--catalog", "-c",
-        help="Path to model catalog JSON. Defaults to 'scripts/umeairt_bundles.json' in install path.",
+        help="Path to model catalog JSON. Defaults to 'scripts/model_manifest.json' in install path.",
     ),
     bundle: str = typer.Option(
         "",
@@ -105,16 +105,17 @@ def download_models(
         load_catalog,
     )
 
-    log = setup_logger(log_file=path / "logs" / "download_log.txt", verbose=verbose)
+    log = setup_logger(log_file=Path(str(path).strip('"')) / "logs" / "download_log.txt", verbose=verbose)
+    path = Path(str(path).strip('"'))
     log.banner("UmeAiRT", "ComfyUI — Model Downloader", __version__)
 
     # Find catalog file
     if catalog_file is None:
-        catalog_file = path / "scripts" / "umeairt_bundles.json"
+        catalog_file = path / "scripts" / "model_manifest.json"
 
     if not catalog_file.exists():
         console.print(f"[red]Catalog not found: {catalog_file}[/]")
-        console.print("[dim]Place umeairt_bundles.json in your install directory's scripts/ folder or use --catalog.[/]")
+        console.print("[dim]Place model_manifest.json in your install directory's scripts/ folder or use --catalog.[/]")
         raise typer.Exit(1)
 
     catalog = load_catalog(catalog_file)

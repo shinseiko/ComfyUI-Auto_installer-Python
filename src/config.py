@@ -83,6 +83,27 @@ class FilesConfig(BaseModel):
     comfy_settings: FileEntry | None = None
 
 
+class TritonConfig(BaseModel):
+    """Triton installation configuration."""
+
+    windows_package: str = "triton-windows"
+    linux_package: str = "triton"
+    version_constraints: dict[str, str] = Field(default_factory=dict)
+
+
+class SageAttentionConfig(BaseModel):
+    """SageAttention installation configuration."""
+
+    pypi_package: str = "sageattention"
+
+
+class OptimizationsConfig(BaseModel):
+    """GPU optimization packages configuration."""
+
+    triton: TritonConfig = Field(default_factory=TritonConfig)
+    sageattention: SageAttentionConfig = Field(default_factory=SageAttentionConfig)
+
+
 class DependenciesConfig(BaseModel):
     """
     Complete dependencies configuration.
@@ -94,6 +115,7 @@ class DependenciesConfig(BaseModel):
     tools: ToolsConfig = Field(default_factory=ToolsConfig)
     pip_packages: PipPackages = Field(default_factory=PipPackages)
     files: FilesConfig = Field(default_factory=FilesConfig)
+    optimizations: OptimizationsConfig | None = None
 
 
 class InstallerSettings(BaseModel):
