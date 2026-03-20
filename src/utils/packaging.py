@@ -88,7 +88,7 @@ def uv_install(
         args.append("--upgrade")
 
     if index_url:
-        args.extend(["--extra-index-url", index_url])
+        args.extend(["--index-url", index_url])
 
     if no_build_isolation:
         args.append("--no-build-isolation")
