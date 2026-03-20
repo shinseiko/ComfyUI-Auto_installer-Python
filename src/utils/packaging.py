@@ -49,7 +49,6 @@ def uv_install(
     upgrade: bool = False,
     no_build_isolation: bool = False,
     no_deps: bool = False,
-    reinstall: bool = False,
     editable: Path | None = None,
     ignore_errors: bool = False,
     timeout: int = 600,
@@ -69,7 +68,6 @@ def uv_install(
         upgrade: If ``True``, add ``--upgrade``.
         no_build_isolation: If ``True``, add ``--no-build-isolation``.
         no_deps: If ``True``, add ``--no-deps``.
-        reinstall: If ``True``, add ``--reinstall`` (force clean install).
         editable: Path to install in editable mode (``-e``).
         ignore_errors: Forwarded to :func:`run_and_log`.
         timeout: Command timeout in seconds.
@@ -97,9 +95,6 @@ def uv_install(
 
     if no_deps:
         args.append("--no-deps")
-
-    if reinstall:
-        args.append("--reinstall")
 
     if requirements:
         args.extend(["-r", str(requirements)])
