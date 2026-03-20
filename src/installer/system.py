@@ -75,7 +75,7 @@ def check_prerequisites(log: InstallerLogger) -> bool:
 
     # Check Git
     if check_command_exists("git"):
-        git_ver_str = subprocess.run(
+        git_ver_str = subprocess.run(  # returncode not checked — version is optional info
             ["git", "--version"], capture_output=True, text=True, timeout=10
         ).stdout.strip()
         git_ver = _parse_git_version(git_ver_str)
@@ -106,7 +106,11 @@ def check_prerequisites(log: InstallerLogger) -> bool:
     return all_ok
 
 
-def install_git(log: InstallerLogger) -> bool:
+def install_git(
+    log: InstallerLogger,
+    *,
+    git_url: str = "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe",
+) -> bool:
     """Download and silently install Git for Windows.
 
     On non-Windows platforms, prints manual installation instructions
@@ -114,6 +118,8 @@ def install_git(log: InstallerLogger) -> bool:
 
     Args:
         log: Installer logger for user-facing messages.
+        git_url: Download URL for the Git installer. Defaults to
+            the version in ``dependencies.json``.
 
     Returns:
         ``True`` if Git was installed successfully, ``False`` otherwise.
@@ -128,14 +134,13 @@ def install_git(log: InstallerLogger) -> bool:
         return False
 
     log.item("Downloading Git for Windows...")
-    git_url = "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
     git_installer = Path(tempfile.gettempdir()) / "git-installer.exe"
 
     try:
         download_file(git_url, git_installer)
         log.sub("Installing Git (accept UAC if prompted)...")
 
-        result = subprocess.run(
+        result = subprocess.run(  # returncode checked below
             [str(git_installer), "/VERYSILENT", "/NORESTART", "/NOCANCEL", "/SP-",
              "/CLOSEAPPLICATIONS", "/RESTARTAPPLICATIONS"],
             timeout=300,
@@ -161,7 +166,7 @@ def install_git(log: InstallerLogger) -> bool:
         git_installer.unlink(missing_ok=True)
 
 
-def ensure_aria2(install_path: Path, log: InstallerLogger) -> bool:
+def ensure_aria2(install_path: Path, log: InstallerLogger, *, aria2_url: str = "") -> bool:
     """Ensure the aria2 download accelerator is available.
 
     Uses a 3-tier search strategy:
@@ -177,6 +182,7 @@ def ensure_aria2(install_path: Path, log: InstallerLogger) -> bool:
     Args:
         install_path: Root installation directory.
         log: Installer logger for user-facing messages.
+        aria2_url: Download URL for the aria2 zip archive.
 
     Returns:
         ``True`` if aria2 is available after this call.
@@ -196,7 +202,8 @@ def ensure_aria2(install_path: Path, log: InstallerLogger) -> bool:
 
     # 3. Platform-specific: download or suggest
     if sys.platform == "win32":
-        return _download_aria2_windows(install_path, log)
+        kwargs = {"aria2_url": aria2_url} if aria2_url else {}
+        return _download_aria2_windows(install_path, log, **kwargs)
     else:
         log.info("aria2 is not installed. Downloads will use standard speed.")
         if sys.platform == "darwin":
@@ -206,22 +213,28 @@ def ensure_aria2(install_path: Path, log: InstallerLogger) -> bool:
         return False
 
 
-def _download_aria2_windows(install_path: Path, log: InstallerLogger) -> bool:
+def _download_aria2_windows(
+    install_path: Path,
+    log: InstallerLogger,
+    *,
+    aria2_url: str = "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip",
+) -> bool:
     """Download and extract aria2 for Windows.
 
-    The archive is downloaded to ``%TEMP%``, extracted into
-    ``install_path/scripts/aria2/``, and the executable is
-    moved to the root of that directory.
+    After extraction, the ``aria2c.exe`` found inside the zip is
+    moved to ``scripts/aria2/aria2c.exe`` and the directory is
+    added to ``PATH``.
 
     Args:
         install_path: Root installation directory.
         log: Installer logger for user-facing messages.
+        aria2_url: Download URL for the aria2 zip. Defaults to
+            the version in ``dependencies.json``.
 
     Returns:
         ``True`` if ``aria2c.exe`` is available after extraction.
     """
     log.item("Downloading aria2 (download accelerator)...")
-    aria2_url = "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip"
     aria2_dir = install_path / "scripts" / "aria2"
     aria2_exe = aria2_dir / "aria2c.exe"
 
@@ -232,6 +245,11 @@ def _download_aria2_windows(install_path: Path, log: InstallerLogger) -> bool:
         aria2_dir.mkdir(parents=True, exist_ok=True)
 
         with zipfile.ZipFile(zip_path, "r") as zf:
+            # Validate all members stay within target dir (zip slip prevention)
+            for member in zf.namelist():
+                target = (aria2_dir / member).resolve()
+                if not str(target).startswith(str(aria2_dir.resolve())):
+                    raise RuntimeError(f"Zip contains path traversal entry: {member}")
             zf.extractall(aria2_dir)
 
         # Find aria2c.exe in extracted contents (may be in a subdirectory)

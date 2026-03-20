@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 import json
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.config import (
     DependenciesConfig,
@@ -12,6 +12,9 @@ from src.config import (
     load_settings,
     save_settings,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestInstallerSettings:

@@ -70,7 +70,20 @@ class Platform(ABC):
 
     def is_link(self, path: Path) -> bool:
         """Check if a path is a link (junction or symlink)."""
-        return path.is_symlink() or (path.exists() and path.is_junction())
+        import os
+        if path.is_symlink():
+            return True
+        if not path.exists():
+            return False
+            
+        # Path.is_junction() is Python 3.12+
+        if hasattr(path, "is_junction"):
+            return path.is_junction()
+        # Fallback to os.path for Python 3.11
+        if hasattr(os.path, "isjunction"):
+            return os.path.isjunction(str(path))
+            
+        return False
 
 
 def get_platform() -> Platform:

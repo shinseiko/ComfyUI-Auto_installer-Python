@@ -5,16 +5,13 @@ Replaces 8 separate PowerShell download scripts (~1200 lines) with a single
 data-driven engine. The catalog format is ``model_manifest.json`` v3,
 hosted in the Assets repo and consumed by both the installer and the Toolkit.
 
-**v3 changes (vs v2):**
+**v3 format:**
 
 - Hierarchical structure: Family → Model → Variant
 - ``_family_meta`` per family (display_name, description)
 - ``_meta`` at the model level (bundle_type, loader_type, clip_type)
-
-**v2 features (still supported):**
-
 - ``_sources`` section with HuggingFace + ModelScope mirrors
-- ``path`` replaces ``url`` + ``filename`` — same relative path on both mirrors
+- ``path`` — same relative path on both mirrors
 - ``sha256`` per file for post-download verification
 - ``bundle_type`` (``image``, ``video``, ``image_inpaint``) for Toolkit filtering
 - Smart fallback: tries primary source, falls back to secondary on failure
@@ -40,10 +37,13 @@ from src.utils.prompts import ask_choice
 if TYPE_CHECKING:
     from pathlib import Path
 
+    from src.utils.logging import InstallerLogger
+
 # ---------------------------------------------------------------------------
 # Path type → directory mapping
 # ---------------------------------------------------------------------------
-PATH_TYPE_MAP: dict[str, str] = {
+# Default mapping dynamically loaded into catalog
+DEFAULT_PATH_MAPPING: dict[str, str] = {
     # FLUX
     "flux_diff": "diffusion_models/FLUX",
     "flux_unet": "unet/FLUX",
@@ -86,7 +86,7 @@ PATH_TYPE_MAP: dict[str, str] = {
 
 
 # ---------------------------------------------------------------------------
-# Pydantic models for the v2 catalog
+# Pydantic models for the v3 catalog
 # ---------------------------------------------------------------------------
 class SourcesConfig(BaseModel):
     """Mirror base URLs for model downloads."""
@@ -96,34 +96,21 @@ class SourcesConfig(BaseModel):
 
 
 class ModelFile(BaseModel):
-    """A single file within a model variant (v2 schema).
+    """A single file within a model variant.
 
     ``path`` is a relative path identical on both mirrors
     (e.g. ``diffusion_models/FLUX/flux1-dev-fp16.safetensors``).
-    The filename is derived from the path.
     """
 
-    path: str = ""
+    path: str
     path_type: str
     sha256: str | None = None
     size_mb: int | None = None
 
-    # v1 compat (deprecated, ignored if path is set)
-    url: str | None = None
-    filename: str | None = None
-    checksum: str | None = None
-
     @property
-    def resolved_filename(self) -> str:
-        """Derive filename from path, or fall back to explicit filename."""
-        if self.path:
-            return self.path.rsplit("/", 1)[-1]
-        return self.filename or ""
-
-    @property
-    def resolved_sha256(self) -> str | None:
-        """Use sha256 if set, fall back to v1 checksum."""
-        return self.sha256 or self.checksum
+    def filename(self) -> str:
+        """Derive filename from the path."""
+        return self.path.rsplit("/", 1)[-1]
 
 
 class ModelVariant(BaseModel):
@@ -136,14 +123,13 @@ class ModelVariant(BaseModel):
 class BundleMeta(BaseModel):
     """Metadata for a model bundle."""
 
-    base_url: str = ""  # v1 compat
     loader_type: str = ""
     clip_type: str = ""
-    bundle_type: str = ""  # v2: "image", "video", "image_inpaint"
+    bundle_type: str = ""  # "image", "video", "image_inpaint"
 
 
 class FamilyMeta(BaseModel):
-    """Metadata for a model family (v3)."""
+    """Metadata for a model family."""
 
     display_name: str = ""
     description: str = ""
@@ -159,26 +145,27 @@ class ModelBundle(BaseModel):
 
     meta: BundleMeta = Field(default_factory=BundleMeta)
     variants: dict[str, ModelVariant] = Field(default_factory=dict)
-    family: str = ""  # v3: parent family name
+    family: str = ""  # parent family name
 
 
 class ModelCatalog(BaseModel):
     """The complete model catalog — all bundles from the JSON file."""
 
-    manifest_version: int = 1
+    manifest_version: int = 3
     sources: SourcesConfig = Field(default_factory=SourcesConfig)
+    path_mapping: dict[str, str] = Field(default_factory=lambda: DEFAULT_PATH_MAPPING.copy())
     bundles: dict[str, ModelBundle] = Field(default_factory=dict)
     families: dict[str, FamilyMeta] = Field(default_factory=dict)
 
 
 # ---------------------------------------------------------------------------
-# Catalog loading
+# Catalog loading (v3 only)
 # ---------------------------------------------------------------------------
 def load_catalog(path: Path) -> ModelCatalog:
     """
-    Load and parse a model catalog JSON file (v1, v2, or v3).
+    Load and parse a v3 model catalog JSON file.
 
-    v3 adds family nesting: ``FLUX → Dev → {variants}``.
+    v3 uses family nesting: ``FLUX → Dev → {variants}``.
     Families are flattened to compound keys: ``FLUX/Dev``.
 
     Args:
@@ -196,54 +183,39 @@ def load_catalog(path: Path) -> ModelCatalog:
     with open(path, encoding="utf-8") as f:
         raw = json.load(f)
 
-    catalog = ModelCatalog()
-    catalog.manifest_version = raw.pop("_manifest_version", 1)
+    version = raw.get("_manifest_version", 3)
 
-    sources_data = raw.pop("_sources", {})
+    catalog = ModelCatalog(manifest_version=version)
+
+    sources_data = raw.get("_sources", {})
     if sources_data:
         catalog.sources = SourcesConfig.model_validate(sources_data)
+        
+    path_mapping = raw.get("_path_mapping", {})
+    if path_mapping:
+        catalog.path_mapping.update(path_mapping)
 
-    if catalog.manifest_version >= 3:
-        _load_v3(raw, catalog)
-    else:
-        _load_v2(raw, catalog)
-
-    return catalog
-
-
-def _load_v2(raw: dict, catalog: ModelCatalog) -> None:
-    """Parse v1/v2 flat bundle format."""
-    for bundle_name, bundle_data in raw.items():
-        meta_data = bundle_data.pop("_meta", {})
-        meta = BundleMeta.model_validate(meta_data)
-
-        variants: dict[str, ModelVariant] = {}
-        for variant_name, variant_data in bundle_data.items():
-            variants[variant_name] = ModelVariant.model_validate(variant_data)
-
-        catalog.bundles[bundle_name] = ModelBundle(meta=meta, variants=variants)
-
-
-def _load_v3(raw: dict, catalog: ModelCatalog) -> None:
-    """Parse v3 hierarchical family → model → variant format."""
+    # Parse families — skip top-level meta keys (prefixed with "_")
     for family_name, family_data in raw.items():
-        if not isinstance(family_data, dict):
+        if family_name.startswith("_") or not isinstance(family_data, dict):
             continue
 
-        # Parse family metadata
-        fmeta_data = family_data.pop("_family_meta", {})
+        # Parse family metadata (read-only — no mutation of input)
+        fmeta_data = family_data.get("_family_meta", {})
         catalog.families[family_name] = FamilyMeta.model_validate(fmeta_data)
 
         # Each remaining key is a model within the family
         for model_name, model_data in family_data.items():
-            if not isinstance(model_data, dict):
+            if model_name.startswith("_") or not isinstance(model_data, dict):
                 continue
 
-            meta_data = model_data.pop("_meta", {})
+            meta_data = model_data.get("_meta", {})
             meta = BundleMeta.model_validate(meta_data)
 
             variants: dict[str, ModelVariant] = {}
             for variant_name, variant_data in model_data.items():
+                if variant_name.startswith("_"):
+                    continue
                 if isinstance(variant_data, dict):
                     variants[variant_name] = ModelVariant.model_validate(
                         variant_data
@@ -254,6 +226,8 @@ def _load_v3(raw: dict, catalog: ModelCatalog) -> None:
                 meta=meta, variants=variants, family=family_name
             )
 
+    return catalog
+
 
 # ---------------------------------------------------------------------------
 # URL building + source selection
@@ -261,36 +235,26 @@ def _load_v3(raw: dict, catalog: ModelCatalog) -> None:
 def _build_download_urls(
     file_entry: ModelFile,
     sources: SourcesConfig,
-    legacy_base_url: str = "",
 ) -> list[str]:
     """Build ordered list of download URLs for a file.
 
-    v2 (has ``path``): builds URLs from both mirrors.
-    v1 (has ``url``): uses ``base_url + url`` or absolute URL.
+    Builds mirror URLs from the file's ``path`` and the catalog's
+    ``_sources`` section (HuggingFace primary, ModelScope fallback).
 
     Args:
         file_entry: The file to download.
         sources: Mirror base URLs.
-        legacy_base_url: v1 ``base_url`` from bundle meta.
 
     Returns:
         Ordered list of URLs to try.
     """
     urls: list[str] = []
 
-    if file_entry.path:
-        # v2: build from both mirrors
-        primary, secondary = _pick_source_order(sources)
-        if primary:
-            urls.append(primary.rstrip("/") + "/" + file_entry.path)
-        if secondary:
-            urls.append(secondary.rstrip("/") + "/" + file_entry.path)
-    elif file_entry.url:
-        # v1 compat
-        if file_entry.url.startswith("http"):
-            urls.append(file_entry.url)
-        elif legacy_base_url:
-            urls.append(legacy_base_url.rstrip("/") + file_entry.url)
+    primary, secondary = _pick_source_order(sources)
+    if primary:
+        urls.append(primary.rstrip("/") + "/" + file_entry.path)
+    if secondary:
+        urls.append(secondary.rstrip("/") + "/" + file_entry.path)
 
     return urls
 
@@ -314,7 +278,7 @@ def _pick_source_order(sources: SourcesConfig) -> tuple[str, str]:
 # ---------------------------------------------------------------------------
 # Download engine
 # ---------------------------------------------------------------------------
-def resolve_file_path(models_dir: Path, path_type: str, filename: str) -> Path:
+def resolve_file_path(models_dir: Path, path_type: str, filename: str, path_mapping: dict[str, str]) -> Path:
     """
     Resolve a path_type + filename to an actual file path.
 
@@ -322,6 +286,7 @@ def resolve_file_path(models_dir: Path, path_type: str, filename: str) -> Path:
         models_dir: Root models directory.
         path_type: Logical path type (e.g. "flux_diff", "clip").
         filename: The filename.
+        path_mapping: Dictionary mapping path types to subdirectories.
 
     Returns:
         Full path to the file.
@@ -329,11 +294,11 @@ def resolve_file_path(models_dir: Path, path_type: str, filename: str) -> Path:
     Raises:
         ValueError: If path_type is unknown.
     """
-    subdir = PATH_TYPE_MAP.get(path_type)
+    subdir = path_mapping.get(path_type)
     if subdir is None:
         raise ValueError(
             f"Unknown path_type '{path_type}'. "
-            f"Valid types: {', '.join(sorted(PATH_TYPE_MAP.keys()))}"
+            f"Valid types: {', '.join(sorted(path_mapping.keys()))}"
         )
     return models_dir / subdir / filename
 
@@ -343,7 +308,7 @@ def download_variant(
     variant_name: str,
     variant: ModelVariant,
     models_dir: Path,
-    sources: SourcesConfig | None = None,
+    catalog: ModelCatalog,
 ) -> int:
     """
     Download all files for a specific model variant.
@@ -352,40 +317,33 @@ def download_variant(
     Verifies SHA256 after download when available.
 
     Args:
-        bundle: The parent bundle (for legacy base_url).
+        bundle: The parent bundle.
         variant_name: Name of the variant (e.g. "fp16").
         variant: The variant with its file list.
         models_dir: Root models directory.
-        sources: Mirror URLs (v2). Falls back to bundle base_url (v1).
+        catalog: The model catalog for sources and path mapping.
 
     Returns:
         Number of files downloaded.
     """
     log = get_logger()
     downloaded = 0
-    effective_sources = sources or SourcesConfig()
+    effective_sources = catalog.sources or SourcesConfig()
 
     for file_entry in variant.files:
-        filename = file_entry.resolved_filename
-        sha256 = file_entry.resolved_sha256
-
-        urls = _build_download_urls(
-            file_entry,
-            effective_sources,
-            legacy_base_url=bundle.meta.base_url,
-        )
+        urls = _build_download_urls(file_entry, effective_sources)
 
         if not urls:
-            log.error(f"No download URL for {filename}", level=2)
+            log.error(f"No download URL for {file_entry.filename}", level=2)
             continue
 
-        dest = resolve_file_path(models_dir, file_entry.path_type, filename)
+        dest = resolve_file_path(models_dir, file_entry.path_type, file_entry.filename, catalog.path_mapping)
 
         try:
-            download_file(urls, dest, checksum=sha256, quiet=False)
+            download_file(urls, dest, checksum=file_entry.sha256, quiet=False)
             downloaded += 1
         except RuntimeError as e:
-            log.error(f"Failed to download {filename}: {e}", level=2)
+            log.error(f"Failed to download {file_entry.filename}: {e}", level=2)
 
     return downloaded
 
@@ -495,7 +453,7 @@ def _prompt_variants(
     bundle: ModelBundle,
     catalog: ModelCatalog,
     models_dir: Path,
-    log: object,
+    log: InstallerLogger,
     user_vram: int = 0,
 ) -> None:
     """Prompt user to pick variant(s) for a single bundle.
@@ -550,6 +508,6 @@ def _prompt_variants(
         log.item(f"Downloading {display_name} — {vname}...", style="cyan")
         count = download_variant(
             bundle, vname, variant, models_dir,
-            sources=catalog.sources,
+            catalog=catalog,
         )
         log.sub(f"{count} file(s) downloaded.", style="success")

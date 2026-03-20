@@ -32,15 +32,21 @@ echo [INFO] Found Python %PY_VERSION%
 set "InstallPath=%~dp0"
 if "%InstallPath:~-1%"=="\" set "InstallPath=%InstallPath:~0,-1%"
 
-:: Install the Python package if not already installed
-python -c "import src" >nul 2>&1
-if %errorlevel% neq 0 (
+:: Install the Python package if not already installed (in an isolated venv)
+if not exist "%InstallPath%\.installer_venv" (
+    echo [INFO] Creating isolated installer environment...
+    python -m venv "%InstallPath%\.installer_venv"
+    if %errorlevel% neq 0 (
+        echo [ERROR] Failed to create virtual environment.
+        pause
+        exit /b 1
+    )
     echo [INFO] Installing comfyui-installer dependencies...
-    pip install -e "%InstallPath%" --quiet
+    "%InstallPath%\.installer_venv\Scripts\pip.exe" install -e "%InstallPath%" --quiet
 )
 
 :: Launch the CLI
 echo [INFO] Launching installer...
-python -m src.cli install --path "%InstallPath%"
+"%InstallPath%\.installer_venv\Scripts\python.exe" -m src.cli install --path "%InstallPath%"
 
 pause

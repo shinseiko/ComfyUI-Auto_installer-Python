@@ -27,6 +27,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ### Changed
 
 - **Architecture**: Migrated from PowerShell (`.ps1`) to Python (`src/`), reducing ~3700 lines of scripts.
+- **Installer Isolation**: The bootstrap script (`install.bat`) now creates a dedicated, isolated `.installer_venv` to prevent polluting the global Python environment.
+- **Path Mapping Engine**: The internal `PATH_TYPE_MAP` is now decoupled, allowing paths to be dynamically defined via `model_manifest.json`.
 - **Node management**: `custom_nodes.json` (JSON manifest) replaces `custom_nodes.csv` + `snapshot.json`.
 - **Dependency management**: `uv` as primary package manager with `pip` fallback.
 - **Logging**: `InstallerLogger` with 4 levels (step/item/sub/info) replacing `Write-Log` PowerShell module.

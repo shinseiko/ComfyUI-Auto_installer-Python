@@ -32,7 +32,7 @@ def detect_nvidia_gpu() -> bool:
     log.item("Checking for NVIDIA GPU...")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # returncode checked below
             ["nvidia-smi", "-L"],
             capture_output=True,
             text=True,
@@ -58,7 +58,7 @@ def get_gpu_vram_info() -> GpuInfo | None:
         GpuInfo object with name and VRAM in GiB, or None if detection fails.
     """
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # returncode checked below
             ["nvidia-smi", "--query-gpu=name,memory.total", "--format=csv,noheader,nounits"],
             capture_output=True,
             text=True,

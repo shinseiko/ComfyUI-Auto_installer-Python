@@ -9,7 +9,6 @@ import pytest
 
 from src.utils.packaging import UvNotFoundError, _ensure_uv, uv_install
 
-
 # ── _ensure_uv ────────────────────────────────────────────────────
 
 
@@ -21,9 +20,8 @@ class TestEnsureUv:
             assert _ensure_uv() == "/usr/local/bin/uv"
 
     def test_uv_not_found(self) -> None:
-        with patch("shutil.which", return_value=None):
-            with pytest.raises(UvNotFoundError, match="uv is not installed"):
-                _ensure_uv()
+        with patch("shutil.which", return_value=None), pytest.raises(UvNotFoundError, match="uv is not installed"):
+            _ensure_uv()
 
 
 # ── uv_install — argument construction ────────────────────────────
@@ -151,6 +149,8 @@ class TestUvInstallArgs:
 
     def test_uv_not_found_raises(self) -> None:
         """When uv is truly missing, uv_install must raise."""
-        with patch("src.utils.packaging._ensure_uv", side_effect=UvNotFoundError("missing")):
-            with pytest.raises(UvNotFoundError):
-                uv_install(Path("/venv/bin/python"), ["numpy"])
+        with (
+            patch("src.utils.packaging._ensure_uv", side_effect=UvNotFoundError("missing")),
+            pytest.raises(UvNotFoundError),
+        ):
+            uv_install(Path("/venv/bin/python"), ["numpy"])

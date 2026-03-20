@@ -26,6 +26,12 @@ class ToolsConfig(BaseModel):
     """All external tools configuration."""
 
     vs_build_tools: ToolConfig = Field(default_factory=ToolConfig)
+    git_windows: ToolConfig = Field(default_factory=lambda: ToolConfig(
+        url="https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
+    ))
+    aria2_windows: ToolConfig = Field(default_factory=lambda: ToolConfig(
+        url="https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip"
+    ))
 
 
 class TorchConfig(BaseModel):

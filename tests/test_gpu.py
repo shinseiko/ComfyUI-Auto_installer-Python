@@ -93,6 +93,6 @@ class TestGpuInfo:
         info = GpuInfo(name="RTX 4090", vram_gib=24)
         try:
             info.name = "RTX 3090"  # type: ignore
-            assert False, "Should have raised FrozenInstanceError"
+            raise AssertionError("Should have raised FrozenInstanceError")
         except AttributeError:
             pass

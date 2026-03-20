@@ -28,6 +28,35 @@ if TYPE_CHECKING:
     from src.utils.logging import InstallerLogger
 
 
+def _create_venv_with_uv(
+    uv_cmd: str | Path,
+    venv_path: Path,
+    log: InstallerLogger,
+) -> None:
+    """Create a venv with uv, trying system Python first then uv-managed.
+
+    Args:
+        uv_cmd: Path or name of the uv executable.
+        venv_path: Target directory for the virtual environment.
+        log: Installer logger.
+
+    Raises:
+        CommandError: If both system and managed Python attempts fail.
+    """
+    try:
+        # Prefer the user's existing system Python
+        run_and_log(str(uv_cmd), ["venv", str(venv_path), "--python", ">=3.11,<3.14",
+                                   "--python-preference", "only-system",
+                                   "--seed", "--link-mode", "copy"])
+        log.sub("Virtual environment created (system Python).", style="success")
+    except CommandError:
+        # No compatible system Python — let uv download one
+        log.item("No compatible system Python found, downloading via uv...")
+        run_and_log(str(uv_cmd), ["venv", str(venv_path), "--python", ">=3.11,<3.14",
+                                   "--seed", "--link-mode", "copy"])
+        log.sub("Virtual environment created (uv-managed Python).", style="success")
+
+
 def setup_environment(
     install_path: Path,
     install_type: str,
@@ -67,44 +96,18 @@ def setup_environment(
         if venv_path.exists():
             log.sub("Virtual environment already exists.", style="success")
         else:
-            # Try uv first — it handles Python download automatically
+            # Find uv: PATH first, then local scripts/uv/
+            uv_cmd: str | Path | None = None
             if check_command_exists("uv"):
-                log.item("Creating Python environment...")
-                try:
-                    # Prefer the user's existing system Python
-                    run_and_log("uv", ["venv", str(venv_path), "--python", ">=3.11,<3.14",
-                                       "--python-preference", "only-system",
-                                       "--seed", "--link-mode", "copy"])
-                    log.sub("Virtual environment created (system Python).", style="success")
-                except CommandError:
-                    # No compatible system Python — let uv download one
-                    log.item("No compatible system Python found, downloading via uv...")
-                    try:
-                        run_and_log("uv", ["venv", str(venv_path), "--python", ">=3.11,<3.14",
-                                           "--seed", "--link-mode", "copy"])
-                        log.sub("Virtual environment created (uv-managed Python).", style="success")
-                    except CommandError:
-                        log.warning("uv venv creation failed, falling back to system Python.", level=2)
+                uv_cmd = "uv"
             else:
-                # Also check for uv in scripts/uv/ (installed by bootstrap)
                 local_uv = scripts_dir / "uv" / ("uv.exe" if sys.platform == "win32" else "uv")
                 if local_uv.exists():
-                    log.item("Creating Python environment...")
-                    try:
-                        run_and_log(str(local_uv), ["venv", str(venv_path), "--python", ">=3.11,<3.14",
-                                                    "--python-preference", "only-system",
-                                                    "--seed", "--link-mode", "copy"])
-                        log.sub("Virtual environment created (system Python).", style="success")
-                    except CommandError:
-                        log.item("No compatible system Python found, downloading via uv...")
-                        try:
-                            run_and_log(str(local_uv), ["venv", str(venv_path), "--python", ">=3.11,<3.14",
-                                                        "--seed", "--link-mode", "copy"])
-                            log.sub("Virtual environment created (uv-managed Python).", style="success")
-                        except CommandError:
-                            log.warning("uv venv creation failed.", level=2)
-                else:
-                    pass
+                    uv_cmd = local_uv
+
+            if uv_cmd is not None:
+                log.item("Creating Python environment...")
+                _create_venv_with_uv(uv_cmd, venv_path, log)
 
             # Fallback: use system Python if uv didn't create the venv
             if not venv_path.exists():
@@ -243,7 +246,7 @@ def _install_miniconda_windows(log: InstallerLogger) -> Path | None:
         install_dir = Path(os.environ.get("LOCALAPPDATA", "")) / "Miniconda3"
 
         log.sub("Installing Miniconda (this may take a minute)...")
-        result = subprocess.run(
+        result = subprocess.run(  # returncode checked below
             [
                 str(installer_path),
                 "/InstallationType=JustMe",
@@ -259,7 +262,7 @@ def _install_miniconda_windows(log: InstallerLogger) -> Path | None:
             conda_exe = install_dir / "Scripts" / "conda.exe"
             if conda_exe.exists():
                 # Re-init shell for conda if needed
-                subprocess.run([str(conda_exe), "init"], capture_output=True)
+                subprocess.run([str(conda_exe), "init"], capture_output=True)  # best-effort, ignore errors
                 return conda_exe
 
         log.error("Miniconda silent installation failed.")
@@ -274,29 +277,25 @@ def _install_miniconda_windows(log: InstallerLogger) -> Path | None:
         installer_path.unlink(missing_ok=True)
 
 
-def find_source_scripts() -> Path | None:
+def find_source_scripts() -> Path:
     """Locate the source ``scripts/`` directory containing config files.
 
-    Searches two locations:
+    Searches relative to this package: ``../../scripts/`` from ``environment.py``.
 
-    1. Relative to this package: ``../../scripts/`` from ``environment.py``.
-    2. Relative to the current working directory: ``./scripts/``.
-
-    Returns:
-        Path to the scripts directory, or ``None`` if not found.
+    Raises:
+        FileNotFoundError: if the scripts directory or dependencies.json is missing.
+        This enforces that the package is running intact.
     """
-    # 1. Relative to this file: src/installer/environment.py → ../../scripts/
     package_root = Path(__file__).resolve().parent.parent.parent
     candidate = package_root / "scripts"
-    if (candidate / "dependencies.json").exists():
-        return candidate
+    
+    if not candidate.exists() or not (candidate / "dependencies.json").exists():
+        raise FileNotFoundError(
+            f"Crucial source directory missing: {candidate}. "
+            "Ensure the installer is not separated from its 'scripts' directory."
+        )
 
-    # 2. Current working directory
-    candidate = Path.cwd() / "scripts"
-    if (candidate / "dependencies.json").exists():
-        return candidate
-
-    return None
+    return candidate
 
 
 # Files needed to bootstrap the install (copied early).
@@ -327,11 +326,11 @@ def provision_scripts(install_path: Path, log: InstallerLogger) -> None:
         log: Installer logger for user-facing messages.
     """
 
-    source_dir = find_source_scripts()
-    if source_dir is None:
-        log.warning("Could not find source scripts directory.", level=1)
-        log.info("Looking for dependencies.json relative to the package and CWD.")
-        return
+    try:
+        source_dir = find_source_scripts()
+    except FileNotFoundError as e:
+        log.error(str(e))
+        raise SystemExit(1) from None
 
     dest_dir = install_path / "scripts"
     dest_dir.mkdir(parents=True, exist_ok=True)

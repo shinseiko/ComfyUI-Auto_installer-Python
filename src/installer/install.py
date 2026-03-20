@@ -23,6 +23,28 @@ Step   Label                             Module
 12     Model Downloads                   :mod:`.finalize`
 =====  ================================  ===================================
 
+Error handling convention
+-------------------------
+
+Each module follows one of three strategies:
+
+**Fatal** — ``SystemExit(1)`` or re-raise.  Used when the step is
+blocking and the installation cannot continue (e.g. Git missing,
+venv creation failure, ComfyUI clone failure after retries).
+
+**Log + continue** — Log a warning and return ``False`` or ``None``.
+Used for non-critical enhancements that should not block the
+installation (e.g. aria2 missing → fallback to httpx,
+optimization packages failing, individual custom node clone failure).
+
+**Best-effort** — ``subprocess.run`` with return code silently
+ignored.  Used only for truly optional side-effects
+(e.g. ``conda init``).  Always annotated with
+``# best-effort, ignore errors``.
+
+All ``subprocess.run()`` calls without ``check=True`` are annotated
+with one of these conventions for quick auditability.
+
 Typical usage::
 
     from src.installer.install import run_install
@@ -32,6 +54,8 @@ Typical usage::
 from __future__ import annotations
 
 import os
+import shutil
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src import __version__
@@ -53,11 +77,11 @@ from src.installer.optimizations import install_optimizations
 from src.installer.repository import clone_comfyui, setup_git_config, setup_junction_architecture
 from src.installer.system import check_prerequisites, ensure_aria2, install_git
 from src.platform.base import get_platform
-from src.utils.download import set_install_path
 from src.utils.logging import setup_logger
+from src.utils.prompts import confirm
 
 if TYPE_CHECKING:
-    from pathlib import Path
+    from src.utils.logging import InstallerLogger
 
 TOTAL_STEPS = 12
 
@@ -98,6 +122,14 @@ def run_install(
     )
     log.banner("UmeAiRT", "ComfyUI — Auto-Installer", __version__)
 
+    # ── Detect previous failed installation ───────────────────────
+    marker = install_path / ".install_in_progress"
+    _handle_partial_install(install_path, marker, log)
+
+    # Create marker — removed only on successful completion
+    install_path.mkdir(parents=True, exist_ok=True)
+    marker.write_text("started", encoding="utf-8")
+
     # ── Load user settings ────────────────────────────────────────
     load_settings(install_path / "scripts" / "local-config.json")
 
@@ -108,12 +140,25 @@ def run_install(
 
     # ── Step 2: Checking Prerequisites ────────────────────────────
     log.step("Checking Prerequisites")
-    set_install_path(install_path)
 
-    if not check_prerequisites(log) and not install_git(log):
-        raise SystemExit(1)
+    # Load source dependencies early for tool URLs
+    from src.installer.environment import find_source_scripts
+    source_dir = find_source_scripts()
+    source_deps_file = source_dir / "dependencies.json" if source_dir else None
+    if source_deps_file and source_deps_file.exists():
+        source_deps = load_dependencies(source_deps_file)
+        git_url = source_deps.tools.git_windows.url
+        aria2_url = source_deps.tools.aria2_windows.url
+    else:
+        git_url = ""
+        aria2_url = ""
 
-    ensure_aria2(install_path, log)
+    if not check_prerequisites(log):
+        kwargs = {"git_url": git_url} if git_url else {}
+        if not install_git(log, **kwargs):
+            raise SystemExit(1)
+
+    ensure_aria2(install_path, log, aria2_url=aria2_url)
 
     # ── Step 3: Creating Python Environment ───────────────────────
     log.step("Creating Python Environment")
@@ -178,7 +223,64 @@ def run_install(
     offer_model_downloads(install_path, log)
 
     # ── Done ──────────────────────────────────────────────────────
+    marker.unlink(missing_ok=True)
     log.success("Installation Complete!", level=0)
     log.success("ComfyUI and all components have been installed.", level=1)
     log.item("Double-click UmeAiRT-Start-ComfyUI to launch!")
+
+
+def _handle_partial_install(
+    install_path: Path,
+    marker: Path,
+    log: InstallerLogger,
+) -> None:
+    """Detect and handle a previously failed installation.
+
+    If a ``.install_in_progress`` marker file exists, a previous run
+    crashed before completing.  Offer the user two choices:
+
+    1. **Clean up** — delete the partial install directory and start fresh.
+    2. **Continue** — keep existing files and retry from step 1.
+
+    Args:
+        install_path: Root installation directory.
+        marker: Path to the marker file.
+        log: Installer logger.
+    """
+    if not marker.exists():
+        return
+
+    log.warning(
+        "A previous installation was interrupted before completing.",
+        level=1,
+    )
+    log.item(f"Location: {install_path}")
+
+    if confirm("Delete the partial installation and start fresh?"):
+        log.item("Cleaning up partial installation...")
+        # Preserve the logs directory for debugging
+        logs_dir = install_path / "logs"
+        logs_backup = None
+        if logs_dir.exists():
+            import tempfile
+
+            logs_backup = Path(tempfile.mkdtemp()) / "logs"
+            shutil.copytree(logs_dir, logs_backup)
+
+        # Remove everything in install_path
+        for child in install_path.iterdir():
+            if child.is_dir():
+                shutil.rmtree(child, ignore_errors=True)
+            else:
+                child.unlink(missing_ok=True)
+
+        # Restore logs
+        if logs_backup and logs_backup.exists():
+            shutil.copytree(logs_backup, logs_dir)
+            shutil.rmtree(logs_backup.parent, ignore_errors=True)
+
+        log.sub("Partial installation removed.", style="success")
+    else:
+        log.item("Keeping existing files. Retrying installation...")
+        marker.unlink(missing_ok=True)
 

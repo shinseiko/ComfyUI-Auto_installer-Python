@@ -3,9 +3,12 @@
 from __future__ import annotations
 
 import hashlib
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.utils.download import verify_checksum
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestVerifyChecksum:

@@ -24,24 +24,17 @@ from rich.progress import (
 
 from src.utils.logging import get_logger
 
-# Module-level hint for the install path — set by install.py so _find_aria2c()
-# can search install_path/scripts/aria2/ without needing it as an argument.
-_install_path: Path | None = None
 
-
-def set_install_path(path: Path) -> None:
-    """Set the install path so _find_aria2c() can check scripts/aria2/."""
-    global _install_path
-    _install_path = path
-
-
-def _find_aria2c() -> Path | None:
+def _find_aria2c(aria2c_hint: Path | None = None) -> Path | None:
     """
     Locate aria2c executable using a 3-tier search strategy.
 
     1. System PATH (user-installed or package-manager-installed)
-    2. install_path/scripts/aria2/ (downloaded by a previous run)
+    2. aria2c_hint directory (e.g. install_path/scripts/aria2/)
     3. Package-relative scripts/aria2/ (if running from source)
+
+    Args:
+        aria2c_hint: Optional directory to search for aria2c.
     """
     import sys
 
@@ -52,9 +45,9 @@ def _find_aria2c() -> Path | None:
 
     exe_name = "aria2c.exe" if sys.platform == "win32" else "aria2c"
 
-    # 2. install_path/scripts/aria2/
-    if _install_path is not None:
-        candidate = _install_path / "scripts" / "aria2" / exe_name
+    # 2. Hint directory (passed by caller, e.g. install_path/scripts/aria2/)
+    if aria2c_hint is not None:
+        candidate = aria2c_hint / exe_name
         if candidate.exists():
             return candidate
 
@@ -118,7 +111,7 @@ def _download_with_aria2c(
     log.info(f"Using aria2c: {aria2c_path}")
 
     try:
-        result = subprocess.run(
+        result = subprocess.run(  # returncode checked below
             args,
             timeout=3600,  # 1 hour timeout
             capture_output=quiet,
@@ -167,6 +160,7 @@ def download_file(
     checksum: str | None = None,
     force: bool = False,
     quiet: bool = True,
+    aria2c_hint: Path | None = None,
 ) -> Path:
     """
     Download a file from one or more URLs to a destination path.
@@ -184,6 +178,8 @@ def download_file(
         checksum: Optional SHA256 hex digest for verification.
         force: If True, re-download even if file exists.
         quiet: If True (default), suppress aria2c console output.
+        aria2c_hint: Optional directory where aria2c may be found
+            (e.g. ``install_path / "scripts" / "aria2"``).
 
     Returns:
         Path to the downloaded file.
@@ -224,7 +220,7 @@ def download_file(
 
         try:
             # Try aria2c first
-            aria2c = _find_aria2c()
+            aria2c = _find_aria2c(aria2c_hint)
             downloaded = False
 
             if aria2c:

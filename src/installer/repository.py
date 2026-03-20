@@ -53,20 +53,23 @@ def clone_comfyui(
     comfy_path: Path,
     deps: DependenciesConfig,
     log: InstallerLogger,
+    *,
+    max_retries: int = 3,
 ) -> None:
     """Clone the ComfyUI repository from the URL in *deps*.
 
-    Skips cloning if ``comfy_path`` already exists. Raises
-    ``SystemExit(1)`` if the clone fails.
+    Skips cloning if ``comfy_path`` already exists. Retries up to
+    *max_retries* times on failure (network errors, timeouts).
 
     Args:
         install_path: Root installation directory.
         comfy_path: Target path for the clone (``install_path/ComfyUI``).
         deps: Parsed ``dependencies.json`` containing the repo URL.
         log: Installer logger for user-facing messages.
+        max_retries: Number of clone attempts before giving up.
 
     Raises:
-        SystemExit: If cloning fails.
+        SystemExit: If cloning fails after all retries.
     """
     if comfy_path.exists():
         log.sub("ComfyUI directory already exists.", style="success")
@@ -74,13 +77,25 @@ def clone_comfyui(
 
     repo_url = deps.repositories.comfyui.url
     log.item(f"Cloning from {repo_url}...")
-    run_and_log("git", ["clone", repo_url, str(comfy_path)])
 
-    if not comfy_path.exists():
-        log.error("ComfyUI cloning failed!")
-        raise SystemExit(1)
+    for attempt in range(1, max_retries + 1):
+        try:
+            run_and_log("git", ["clone", repo_url, str(comfy_path)])
+            if comfy_path.exists():
+                log.sub("ComfyUI cloned successfully.", style="success")
+                return
+        except CommandError:
+            pass
 
-    log.sub("ComfyUI cloned successfully.", style="success")
+        # Clean up partial clone before retry
+        if comfy_path.exists():
+            shutil.rmtree(comfy_path, ignore_errors=True)
+
+        if attempt < max_retries:
+            log.warning(f"Clone attempt {attempt}/{max_retries} failed, retrying...", level=2)
+        else:
+            log.error(f"ComfyUI cloning failed after {max_retries} attempts!")
+            raise SystemExit(1)
 
 
 def setup_junction_architecture(

@@ -4,14 +4,15 @@
 ![Python](https://img.shields.io/badge/Python-3.11%20|%203.12%20|%203.13-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
-![Tests](https://img.shields.io/badge/Tests-101%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Tests-103%20passed-brightgreen.svg)
 
 Cross-platform Python CLI to fully automate the installation, update, and configuration of ComfyUI. One-click setup with GPU optimizations, curated custom nodes, and VRAM-aware model downloads.
 
 ## ✨ Features
 
 - **One-Click Install** — Double-click `Install.bat` (Windows) or run `Install.sh` (Linux/macOS)
-- **Smart Environment** — Auto-detects system, creates `uv` venv (default) or local `conda` prefix
+- **Isolated Core** — The installer runs in its own dedicated, safe virtual environment (`.installer_venv`).
+- **Smart Environment** — Auto-detects system, creates `uv` venv (default) or local `conda` prefix for ComfyUI.
 - **GPU Optimizations** — Installs Triton, SageAttention, and xformers with version compatibility
 - **34 Curated Custom Nodes** — Additive manifest system — never removes user-installed nodes
 - **Model Catalog v3** — 7 model families (FLUX, Z-IMAGE, WAN 2.1, WAN 2.2, HiDream, QWEN, LTX-2) with VRAM-based recommendations and SHA-256 integrity
@@ -104,7 +105,7 @@ ComfyUI-Auto_installer/
 │   ├── platform/             # OS abstraction (Windows/Linux/macOS)
 │   └── utils/                # Logging, commands, packaging, GPU detection
 ├── scripts/                  # Config files (dependencies.json, custom_nodes.json)
-├── tests/                    # 101 tests (unit + integration)
+├── tests/                    # 103 tests (unit + integration)
 ├── Install.bat / Install.sh  # Bootstrap entry points
 └── pyproject.toml            # Project metadata (hatchling)
 ```
@@ -115,6 +116,7 @@ The installer uses a **junction-based architecture** to separate user data from 
 
 ```
 install_path/
+├── .installer_venv/         # Isolated environment for the installer logic
 ├── ComfyUI/                 # Git repo (can be wiped for updates)
 │   ├── models/ → ../models  # ← junction (symlink)
 │   ├── output/ → ../output  # ← junction
@@ -172,6 +174,10 @@ uv run ruff check src/ tests/
 - **Secure subprocess calls** — no `shell=True`, explicit argument lists
 - **HTTPS only** — all download URLs validated
 - **Automated audits** — CI runs Bandit + pip-audit on every push
+- **Zip slip prevention** — Archive extraction validates all paths stay within the target directory
+- **SHA-256 integrity** — Post-download checksum verification for all model files
+
+For details, see [`SECURITY.md`](SECURITY.md).
 
 ## 📝 License
 

@@ -109,9 +109,6 @@ def download_models(
 ) -> None:
     """Download model packs for ComfyUI from the unified catalog."""
     from src.downloader.engine import (
-        download_variant as dl_variant,
-    )
-    from src.downloader.engine import (
         interactive_download,
         list_bundles,
         load_catalog,
@@ -147,12 +144,12 @@ def download_models(
                 console.print(f"Available: {', '.join(b.variants.keys())}")
                 raise typer.Exit(1)
             log.item(f"Downloading {bundle} — {variant}...", style="cyan")
-            dl_variant(b, variant, b.variants[variant], models_dir)
+            dl_variant(b, variant, b.variants[variant], models_dir, catalog)
         else:
             # Download all variants for this bundle
             for vname, v in b.variants.items():
                 log.item(f"Downloading {bundle} — {vname}...", style="cyan")
-                dl_variant(b, vname, v, models_dir)
+                dl_variant(b, vname, v, models_dir, catalog)
     else:
         # Interactive mode
         interactive_download(catalog, models_dir)

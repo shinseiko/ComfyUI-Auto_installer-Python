@@ -2,9 +2,12 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src.utils.logging import InstallerLogger, get_logger, setup_logger
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestInstallerLogger:

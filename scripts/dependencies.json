@@ -12,6 +12,12 @@
       "install_path": "C:\\Program Files (x86)\\Microsoft Visual Studio\\2022\\BuildTools",
       "url": "https://aka.ms/vs/17/release/vs_BuildTools.exe",
       "arguments": "--wait --quiet --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
+    },
+    "git_windows": {
+      "url": "https://github.com/git-for-windows/git/releases/download/v2.47.1.windows.1/Git-2.47.1-64-bit.exe"
+    },
+    "aria2_windows": {
+      "url": "https://github.com/aria2/aria2/releases/download/release-1.37.0/aria2-1.37.0-win-64bit-build1.zip"
     }
   },
   "pip_packages": {

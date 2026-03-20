@@ -11,7 +11,7 @@ Handles:
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 
 from src import __version__
 from src.config import load_dependencies
@@ -19,6 +19,9 @@ from src.utils.commands import CommandError, run_and_log
 from src.utils.logging import InstallerLogger, setup_logger
 from src.utils.packaging import uv_install
 from src.utils.prompts import confirm
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def update_comfyui_core(comfy_path: Path, log: InstallerLogger) -> None:
@@ -46,10 +49,10 @@ def update_custom_nodes(
 ) -> None:
     """Update bundled custom nodes. User-installed nodes are NEVER touched.
 
-    Always refreshes ``custom_nodes.json`` from the source repository
-    so that newly added nodes are picked up on every update.
+    Merges new nodes from the source manifest (additive-only) so that
+    user customizations are preserved while newly added nodes are
+    picked up on every update.
     """
-    import shutil
 
     from src.installer.environment import find_source_scripts
     from src.installer.nodes import load_manifest, update_all_nodes
@@ -57,14 +60,17 @@ def update_custom_nodes(
     scripts_dir = install_path / "scripts"
     manifest_path = scripts_dir / "custom_nodes.json"
 
-    # Always refresh from source to pick up newly added nodes
+    # Merge new nodes from source (additive-only — never overwrites user changes)
     source_dir = find_source_scripts()
     if source_dir:
         source_manifest = source_dir / "custom_nodes.json"
         if source_manifest.exists():
             scripts_dir.mkdir(parents=True, exist_ok=True)
-            shutil.copy2(source_manifest, manifest_path)
-            log.item("custom_nodes.json refreshed from source.", style="cyan")
+            added = _merge_node_manifests(source_manifest, manifest_path, log)
+            if added > 0:
+                log.item(f"custom_nodes.json: {added} new node(s) added from source.", style="cyan")
+            else:
+                log.sub("custom_nodes.json is up to date.", style="success")
 
     if not manifest_path.exists():
         log.warning("custom_nodes.json not found. Skipping node updates.", level=1)
@@ -139,6 +145,52 @@ def run_update(install_path: Path, *, verbose: bool = False) -> None:
     log.success("All components have been updated.", level=1)
 
 
+def _merge_node_manifests(
+    source_path: Path,
+    dest_path: Path,
+    log: InstallerLogger,
+) -> int:
+    """Merge source manifest into dest (additive-only).
+
+    New nodes (by name) are appended. Existing nodes are never
+    modified or removed, preserving user customizations.
+
+    If *dest_path* does not exist, the source is copied as-is.
+
+    Args:
+        source_path: Path to the upstream manifest.
+        dest_path: Path to the installed manifest (may not exist).
+        log: Installer logger.
+
+    Returns:
+        Number of new nodes added.
+    """
+    import json
+    import shutil
+
+    if not dest_path.exists():
+        shutil.copy2(source_path, dest_path)
+        # Count nodes in the source for reporting
+        with open(source_path, encoding="utf-8") as f:
+            data = json.load(f)
+        return len(data.get("nodes", []))
+
+    with open(source_path, encoding="utf-8") as f:
+        src_data = json.load(f)
+    with open(dest_path, encoding="utf-8") as f:
+        dst_data = json.load(f)
+
+    existing_names = {n["name"] for n in dst_data.get("nodes", [])}
+    new_nodes = [n for n in src_data.get("nodes", []) if n["name"] not in existing_names]
+
+    if new_nodes:
+        dst_data.setdefault("nodes", []).extend(new_nodes)
+        with open(dest_path, "w", encoding="utf-8") as f:
+            json.dump(dst_data, f, indent=2, ensure_ascii=False)
+
+    return len(new_nodes)
+
+
 def _detect_python(scripts_dir: Path, log: InstallerLogger) -> Path:
     """Detect the Python executable from the install type."""
     import sys
@@ -169,5 +221,6 @@ def _detect_python(scripts_dir: Path, log: InstallerLogger) -> Path:
                 log.item(f"Conda Python detected: {conda_py}", style="cyan")
                 return conda_py
 
-    log.warning("Using system Python (install_type not detected).", level=1)
-    return Path(sys.executable)
+    log.error("Could not determine venv Python. Is this a valid installation?")
+    log.item("Expected 'install_type' file in scripts/ directory.")
+    raise SystemExit(1)

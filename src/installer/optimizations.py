@@ -41,7 +41,7 @@ def _check_package_installed(python_exe: Path, package: str) -> str | None:
     Returns:
         Installed version string, or ``None`` if not installed.
     """
-    result = subprocess.run(
+    result = subprocess.run(  # returncode checked below
         [str(python_exe), "-c",
          f"from importlib.metadata import version; print(version('{package}'))"],
         capture_output=True, text=True, timeout=10,
@@ -60,7 +60,7 @@ def _get_cuda_version_from_torch(python_exe: Path) -> str | None:
     Returns:
         CUDA version string (e.g. ``"12.8"``), or ``None``.
     """
-    result = subprocess.run(
+    result = subprocess.run(  # returncode checked below
         [str(python_exe), "-c",
          "import torch; print(torch.version.cuda or '')"],
         capture_output=True, text=True, timeout=30,
@@ -80,7 +80,7 @@ def _get_torch_version(python_exe: Path) -> str | None:
     Returns:
         Version string (e.g. ``"2.8.0+cu128"``), or ``None``.
     """
-    result = subprocess.run(
+    result = subprocess.run(  # returncode checked below
         [str(python_exe), "-c", "import torch; print(torch.__version__)"],
         capture_output=True, text=True, timeout=30,
     )

@@ -104,7 +104,7 @@ def install_wheels(
 
     # Detect Python version from the venv
     import subprocess
-    result = subprocess.run(
+    result = subprocess.run(  # returncode not checked — fallback to default
         [str(python_exe), "-c", "import sys; print(sys.version_info.major, sys.version_info.minor)"],
         capture_output=True, text=True, timeout=10,
     )
@@ -173,9 +173,11 @@ def install_custom_nodes(
     # Try to load manifest: install_path/scripts/ first, then source scripts
     manifest_path = scripts_dir / "custom_nodes.json"
     if not manifest_path.exists():
-        source_dir = find_source_scripts()
-        if source_dir:
+        try:
+            source_dir = find_source_scripts()
             manifest_path = source_dir / "custom_nodes.json"
+        except FileNotFoundError:
+            pass
 
     if not manifest_path.exists():
         log.warning("custom_nodes.json not found. Skipping node installation.", level=1)
@@ -189,9 +191,11 @@ def install_custom_nodes(
     # (the node expects it in its own folder, not in scripts/)
     nunchaku_src = scripts_dir / "nunchaku_versions.json"
     if not nunchaku_src.exists():
-        source_dir = find_source_scripts()
-        if source_dir:
+        try:
+            source_dir = find_source_scripts()
             nunchaku_src = source_dir / "nunchaku_versions.json"
+        except FileNotFoundError:
+            pass
 
     nunchaku_dst = custom_nodes_dir / "ComfyUI-nunchaku" / "nunchaku_versions.json"
     if nunchaku_src.exists() and nunchaku_dst.parent.exists():

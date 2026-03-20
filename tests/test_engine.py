@@ -6,49 +6,12 @@ from pathlib import Path
 import pytest
 
 from src.downloader.engine import (
-    BundleMeta,
-    FamilyMeta,
-    ModelBundle,
-    ModelCatalog,
-    ModelVariant,
-    SourcesConfig,
     load_catalog,
-    list_bundles,
 )
-
 
 # ---------------------------------------------------------------------------
 # Fixtures
 # ---------------------------------------------------------------------------
-
-@pytest.fixture
-def v2_catalog(tmp_path: Path) -> Path:
-    """Create a minimal v2 flat catalog."""
-    data = {
-        "_manifest_version": 2,
-        "_sources": {
-            "huggingface": "https://hf.example.com/repo",
-            "modelscope": "https://ms.example.com/repo",
-        },
-        "FLUX": {
-            "_meta": {"bundle_type": "image", "loader_type": "flux", "clip_type": "t5"},
-            "fp16": {
-                "min_vram": 30,
-                "files": [
-                    {
-                        "path": "diffusion_models/FLUX/flux-dev-fp16.safetensors",
-                        "path_type": "flux_diff",
-                        "sha256": "abc123",
-                        "size_mb": 22000,
-                    },
-                ],
-            },
-        },
-    }
-    path = tmp_path / "model_manifest.json"
-    path.write_text(json.dumps(data), encoding="utf-8")
-    return path
-
 
 @pytest.fixture
 def v3_catalog(tmp_path: Path) -> Path:
@@ -131,33 +94,21 @@ def v3_catalog(tmp_path: Path) -> Path:
 
 
 # ---------------------------------------------------------------------------
-# Test: v2 backward compatibility
+# Test: catalog does not mutate input
 # ---------------------------------------------------------------------------
 
-class TestLoadCatalogV2:
-    """Verify v1/v2 flat catalogs still load correctly."""
+class TestCatalogNoMutation:
+    """Ensure load_catalog does not mutate the raw JSON data."""
 
-    def test_loads_v2(self, v2_catalog: Path):
-        cat = load_catalog(v2_catalog)
-        assert cat.manifest_version == 2
-        assert "FLUX" in cat.bundles
-
-    def test_v2_sources(self, v2_catalog: Path):
-        cat = load_catalog(v2_catalog)
-        assert cat.sources.huggingface == "https://hf.example.com/repo"
-        assert cat.sources.modelscope == "https://ms.example.com/repo"
-
-    def test_v2_meta(self, v2_catalog: Path):
-        cat = load_catalog(v2_catalog)
-        assert cat.bundles["FLUX"].meta.bundle_type == "image"
-
-    def test_v2_variants(self, v2_catalog: Path):
-        cat = load_catalog(v2_catalog)
-        assert "fp16" in cat.bundles["FLUX"].variants
-
-    def test_v2_no_families(self, v2_catalog: Path):
-        cat = load_catalog(v2_catalog)
-        assert len(cat.families) == 0
+    def test_load_does_not_mutate_input(self, v3_catalog: Path):
+        """Loading the catalog twice should produce identical results."""
+        cat1 = load_catalog(v3_catalog)
+        cat2 = load_catalog(v3_catalog)
+        # If load_catalog mutated the file data, the second load would differ
+        assert len(cat1.bundles) == len(cat2.bundles)
+        assert len(cat1.families) == len(cat2.families)
+        for key in cat1.bundles:
+            assert key in cat2.bundles
 
 
 # ---------------------------------------------------------------------------
