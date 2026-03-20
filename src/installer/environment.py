@@ -281,6 +281,7 @@ def find_source_scripts() -> Path:
     """Locate the source ``scripts/`` directory containing config files.
 
     Searches relative to this package: ``../../scripts/`` from ``environment.py``.
+    Falls back to ``Path.cwd() / "scripts"`` to support installed environments (like CI).
 
     Raises:
         FileNotFoundError: if the scripts directory or dependencies.json is missing.
@@ -289,13 +290,17 @@ def find_source_scripts() -> Path:
     package_root = Path(__file__).resolve().parent.parent.parent
     candidate = package_root / "scripts"
 
-    if not candidate.exists() or not (candidate / "dependencies.json").exists():
-        raise FileNotFoundError(
-            f"Crucial source directory missing: {candidate}. "
-            "Ensure the installer is not separated from its 'scripts' directory."
-        )
+    if candidate.exists() and (candidate / "dependencies.json").exists():
+        return candidate
 
-    return candidate
+    cwd_candidate = Path.cwd() / "scripts"
+    if cwd_candidate.exists() and (cwd_candidate / "dependencies.json").exists():
+        return cwd_candidate
+
+    raise FileNotFoundError(
+        f"Crucial source directory missing: {candidate}. "
+        "Ensure the installer is not separated from its 'scripts' directory."
+    )
 
 
 # Files needed to bootstrap the install (copied early).
