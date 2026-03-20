@@ -123,11 +123,15 @@ set "VENV_PY=%VENV_PATH%\Scripts\python.exe"
 
 if not exist "%VENV_PY%" (
     echo [INFO] Creating Python environment...
-    "%UV_EXE%" venv "%VENV_PATH%" --python ">=3.11,<3.14" --seed --link-mode copy
+    "%UV_EXE%" venv "%VENV_PATH%" --python ">=3.11,<3.14" --python-preference only-system --seed --link-mode copy
     if !errorlevel! neq 0 (
-        echo [ERROR] Failed to create Python environment.
-        pause
-        exit /b 1
+        echo [INFO] No compatible system Python found, downloading...
+        "%UV_EXE%" venv "%VENV_PATH%" --python ">=3.11,<3.14" --seed --link-mode copy
+        if !errorlevel! neq 0 (
+            echo [ERROR] Failed to create Python environment.
+            pause
+            exit /b 1
+        )
     )
     echo [INFO] Python environment ready.
 ) else (
