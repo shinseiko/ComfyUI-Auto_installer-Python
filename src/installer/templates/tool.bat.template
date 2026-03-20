@@ -21,7 +21,7 @@ if exist "%InstallPath%\scripts\install_type" (
 )
 
 if "%InstallType%"=="venv" (
-    call "%InstallPath%\scripts\venv\Scripts\activate.bat"
+    call "%InstallPath%\scripts\venv\Scripts\activate.bat" 2>nul
 ) else (
     :: Try standard Miniconda installations first
     if exist "%LOCALAPPDATA%\Miniconda3\Scripts\activate.bat" (

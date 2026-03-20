@@ -22,7 +22,7 @@ if exist "%InstallPath%\scripts\install_type" (
 
 if "%InstallType%"=="venv" (
     echo [INFO] Activating venv...
-    call "%InstallPath%\scripts\venv\Scripts\activate.bat"
+    call "%InstallPath%\scripts\venv\Scripts\activate.bat" 2>nul
 ) else (
     echo [INFO] Activating local Conda environment...
     
