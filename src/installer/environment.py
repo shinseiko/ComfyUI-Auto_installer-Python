@@ -5,7 +5,7 @@ Creates the Python virtual environment and copies the minimum
 configuration files needed for the rest of the install:
 
 - **venv creation** (Step 3): tries ``uv`` first (auto-downloads
-  Python 3.13), falls back to system Python.
+  Python 3.11-3.13), falls back to system Python.
 - **Provisioning** (Step 4): copies ``dependencies.json`` and the
   model catalog to the install directory.
 """
@@ -37,10 +37,10 @@ def setup_environment(
 
     Strategy (in order):
 
-    1. ``uv venv`` with Python 3.13 auto-managed.
-    2. Local ``uv`` binary from bootstrap (``scripts/uv/``).
-    3. System Python 3.13 (detected via platform abstraction).
-    4. Auto-install Python 3.13 on Windows (if user agrees).
+    1. ``uv venv`` with Python >=3.11,<3.14 auto-managed.
+    2. System conda (Miniconda/Anaconda) with a local prefix.
+    3. System Python 3.11-3.13 (detected via platform abstraction).
+    4. Auto-install Python on Windows (if user agrees).
 
     After creation, verifies the expected ``python`` executable
     exists inside the venv.
@@ -54,7 +54,7 @@ def setup_environment(
         Absolute path to the Python executable inside the environment.
 
     Raises:
-        SystemExit: If no usable Python 3.13 can be found or created.
+        SystemExit: If no usable Python 3.11+ can be found or created.
     """
     scripts_dir = install_path / "scripts"
     scripts_dir.mkdir(parents=True, exist_ok=True)
@@ -69,9 +69,9 @@ def setup_environment(
         else:
             # Try uv first — it handles Python download automatically
             if check_command_exists("uv"):
-                log.item("Creating venv with uv (Python 3.13 auto-managed)...")
+                log.item("Creating venv with uv (Python >=3.11 auto-managed)...")
                 try:
-                    run_and_log("uv", ["venv", str(venv_path), "--python", "3.13", "--seed"])
+                    run_and_log("uv", ["venv", str(venv_path), "--python", ">=3.11,<3.14", "--seed"])
                     log.sub("Virtual environment created via uv.", style="success")
                 except CommandError:
                     log.warning("uv venv creation failed, falling back to system Python.", level=2)
@@ -81,9 +81,9 @@ def setup_environment(
                 # Also check for uv in scripts/uv/ (installed by bootstrap)
                 local_uv = scripts_dir / "uv" / ("uv.exe" if sys.platform == "win32" else "uv")
                 if local_uv.exists():
-                    log.item("Creating venv with local uv (Python 3.13 auto-managed)...")
+                    log.item("Creating venv with local uv (Python >=3.11 auto-managed)...")
                     try:
-                        run_and_log(str(local_uv), ["venv", str(venv_path), "--python", "3.13", "--seed"])
+                        run_and_log(str(local_uv), ["venv", str(venv_path), "--python", ">=3.11,<3.14", "--seed"])
                         log.sub("Virtual environment created via uv.", style="success")
                     except CommandError:
                         log.warning("uv venv creation failed, falling back to system Python.", level=2)
@@ -95,12 +95,16 @@ def setup_environment(
             # Fallback: use system Python if uv didn't create the venv
             if not venv_path.exists():
                 platform = get_platform()
-                python_path = platform.detect_python("3.13")
+                python_path = None
+                for try_version in ("3.13", "3.12", "3.11"):
+                    python_path = platform.detect_python(try_version)
+                    if python_path:
+                        break
 
                 if python_path is None:
-                    log.error("Python 3.13 is required but could not be acquired.")
+                    log.error("Python 3.11+ is required but could not be acquired.")
                     log.item("If 'uv' failed, this may be due to network or Antivirus restrictions.")
-                    log.item("Please install it manually from https://www.python.org/downloads/release/python-31311/")
+                    log.item("Please install Python 3.11-3.13 from https://www.python.org/downloads/")
                     raise SystemExit(1)
 
                 log.item(f"Creating venv with {python_path}...")

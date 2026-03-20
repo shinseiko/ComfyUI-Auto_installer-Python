@@ -36,10 +36,41 @@ class TorchConfig(BaseModel):
 
 
 class WheelConfig(BaseModel):
-    """A pre-built wheel package to install."""
+    """A pre-built wheel package to install.
 
-    name: str
-    url: str
+    Supports version-aware wheels via the ``versions`` mapping:
+    each key is a CPython tag (e.g. ``"cp311"``, ``"cp312"``)
+    and the value is the download URL for that version.
+
+    Legacy format (flat ``name`` + ``url``) is still supported.
+    """
+
+    name: str = ""
+    url: str = ""
+    versions: dict[str, str] = Field(default_factory=dict)
+
+    def resolve(self, python_version: tuple[int, int]) -> tuple[str, str] | None:
+        """Pick the wheel matching the running Python.
+
+        Args:
+            python_version: (major, minor) tuple, e.g. (3, 13).
+
+        Returns:
+            (name, url) tuple, or None if no match.
+        """
+        tag = f"cp{python_version[0]}{python_version[1]}"
+
+        if self.versions:
+            url = self.versions.get(tag)
+            if url:
+                whl_name = url.rsplit("/", 1)[-1].removesuffix(".whl")
+                return whl_name, url
+            return None
+
+        # Legacy: flat name + url (assumed to match current Python)
+        if self.name and self.url:
+            return self.name, self.url
+        return None
 
 
 class PipPackages(BaseModel):

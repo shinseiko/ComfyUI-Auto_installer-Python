@@ -89,8 +89,9 @@ def install_wheels(
 ) -> None:
     """Download and install pre-built ``.whl`` packages.
 
-    Each wheel is downloaded to ``scripts/``, installed via uv,
-    then deleted to save disk space.
+    Detects the Python version from the venv and picks the matching
+    wheel for each entry.  Each wheel is downloaded to ``scripts/``,
+    installed via uv, then deleted to save disk space.
 
     Args:
         python_exe: Path to the venv Python executable.
@@ -101,18 +102,37 @@ def install_wheels(
     if not deps.pip_packages.wheels:
         return
 
+    # Detect Python version from the venv
+    import subprocess
+    result = subprocess.run(
+        [str(python_exe), "-c", "import sys; print(sys.version_info.major, sys.version_info.minor)"],
+        capture_output=True, text=True, timeout=10,
+    )
+    parts = result.stdout.strip().split()
+    py_version = (int(parts[0]), int(parts[1])) if len(parts) == 2 else (3, 13)
+    log.info(f"Python version detected: {py_version[0]}.{py_version[1]}")
+
     log.item(f"Installing {len(deps.pip_packages.wheels)} wheel packages...")
     scripts_dir = install_path / "scripts"
 
     for wheel in deps.pip_packages.wheels:
-        wheel_path = scripts_dir / f"{wheel.name}.whl"
-        log.sub(f"Installing {wheel.name}...")
+        resolved = wheel.resolve(py_version)
+        if resolved is None:
+            log.warning(
+                f"No wheel available for {wheel.name} on Python {py_version[0]}.{py_version[1]}, skipping.",
+                level=2,
+            )
+            continue
+
+        whl_name, whl_url = resolved
+        wheel_path = scripts_dir / f"{whl_name}.whl"
+        log.sub(f"Installing {whl_name}...")
 
         try:
-            download_file(wheel.url, wheel_path)
+            download_file(whl_url, wheel_path)
             uv_install(python_exe, [str(wheel_path)], ignore_errors=True)
         except Exception as e:
-            log.warning(f"Failed to install {wheel.name}: {e}", level=3)
+            log.warning(f"Failed to install {whl_name}: {e}", level=3)
         finally:
             wheel_path.unlink(missing_ok=True)
 

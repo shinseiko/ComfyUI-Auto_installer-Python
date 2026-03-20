@@ -116,14 +116,14 @@ if not exist "%UV_EXE%" (
 )
 
 :: ============================================================================
-:: Step 3: Create bootstrap venv (uv auto-downloads Python 3.13 if needed)
+:: Step 3: Create bootstrap venv (uv auto-downloads Python 3.11-3.13 if needed)
 :: ============================================================================
 set "VENV_PATH=%InstallPath%\scripts\venv"
 set "VENV_PY=%VENV_PATH%\Scripts\python.exe"
 
 if not exist "%VENV_PY%" (
-    echo [INFO] Creating Python 3.13 environment...
-    "%UV_EXE%" venv "%VENV_PATH%" --python 3.13 --seed
+    echo [INFO] Creating Python environment...
+    "%UV_EXE%" venv "%VENV_PATH%" --python ">=3.11,<3.14" --seed
     if !errorlevel! neq 0 (
         echo [ERROR] Failed to create Python environment.
         pause

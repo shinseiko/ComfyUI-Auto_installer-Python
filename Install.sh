@@ -100,14 +100,14 @@ else
 fi
 
 # ============================================================================
-# Step 3: Create bootstrap venv (uv auto-downloads Python 3.13 if needed)
+# Step 3: Create bootstrap venv (uv auto-downloads Python 3.11-3.13 if needed)
 # ============================================================================
 VENV_PATH="$INSTALL_PATH/scripts/venv"
 VENV_PY="$VENV_PATH/bin/python"
 
 if [ ! -f "$VENV_PY" ]; then
-    echo "[INFO] Creating Python 3.13 environment..."
-    uv venv "$VENV_PATH" --python 3.13 --seed
+    echo "[INFO] Creating Python environment..."
+    uv venv "$VENV_PATH" --python ">=3.11,<3.14" --seed
     echo "[INFO] Python environment ready."
 else
     echo "[INFO] Python environment already exists."
