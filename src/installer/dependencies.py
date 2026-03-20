@@ -131,12 +131,6 @@ def install_wheels(
         try:
             download_file(whl_url, wheel_path)
             uv_install(python_exe, [str(wheel_path)], ignore_errors=True)
-            # Force-reinstall via pip to fix potential binary ABI issues
-            # (uv install can leave compiled extensions in a broken state)
-            run_and_log(str(python_exe), [
-                "-m", "pip", "install", "--force-reinstall",
-                str(wheel_path),
-            ], ignore_errors=True)
         except Exception as e:
             log.warning(f"Failed to install {whl_name}: {e}", level=3)
         finally:
