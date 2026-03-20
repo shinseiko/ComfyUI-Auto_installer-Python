@@ -29,6 +29,15 @@
           "cp312": "https://github.com/nunchaku-ai/nunchaku/releases/download/v1.2.1/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-win_amd64.whl",
           "cp313": "https://github.com/nunchaku-ai/nunchaku/releases/download/v1.2.1/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl"
         }
+      },
+      {
+        "name": "insightface",
+        "versions": {
+          "cp310": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/insightface-0.7.3-cp310-cp310-win_amd64.whl",
+          "cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/insightface-0.7.3-cp311-cp311-win_amd64.whl",
+          "cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/insightface-0.7.3-cp312-cp312-win_amd64.whl",
+          "cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/insightface-0.7.3-cp313-cp313-win_amd64.whl"
+        }
       }
     ],
     "standard": [
