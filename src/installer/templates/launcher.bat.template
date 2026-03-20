@@ -19,7 +19,8 @@ if exist "%InstallPath%\scripts\install_type" (
 )
 
 if "%InstallType%"=="venv" (
-    call "%InstallPath%\scripts\venv\Scripts\activate.bat"
+    set "VIRTUAL_ENV=%InstallPath%\scripts\venv"
+    set "PATH=%InstallPath%\scripts\venv\Scripts;%PATH%"
     echo [INFO] Venv activated.
 ) else (
     echo [INFO] Activating local Conda environment...

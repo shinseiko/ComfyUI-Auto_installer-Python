@@ -20,7 +20,8 @@ if exist "%InstallPath%\scripts\install_type" (
 )
 
 if "%InstallType%"=="venv" (
-    call "%InstallPath%\scripts\venv\Scripts\activate.bat" 2>nul
+    set "VIRTUAL_ENV=%InstallPath%\scripts\venv"
+    set "PATH=%InstallPath%\scripts\venv\Scripts;%PATH%"
 ) else (
     :: Try standard Miniconda installations first
     if exist "%LOCALAPPDATA%\Miniconda3\Scripts\activate.bat" (
