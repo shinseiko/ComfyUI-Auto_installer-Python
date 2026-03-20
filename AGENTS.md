@@ -47,7 +47,7 @@ The installer uses a **three-layer architecture**: a zero-dependency bootstrap (
 
 | Layer | File | Purpose |
 |-------|------|---------|
-| **Bootstrap** | `Install.bat` / `Install.sh` | Downloads `uv`, creates venv with Python 3.13 (auto-downloaded if absent), installs CLI |
+| **Bootstrap** | `Install.bat` / `Install.sh` | Downloads `uv`, creates venv with Python 3.11-3.13 (prefers system Python, downloads if absent), installs CLI |
 | **Phase 1** | `src/installer/phase1.py` | System checks, venv/conda setup (reuses bootstrap venv or creates new), tool installs (aria2, git) |
 | **Phase 2** | `src/installer/phase2.py` | ComfyUI clone, junctions, pip packages, custom nodes, CLI install in env, launcher generation |
 
@@ -165,7 +165,7 @@ torch_url = "https://download.pytorch.org/whl/cu130"
 | `scripts/dependencies.json` | URLs, packages, tools config |
 | `scripts/custom_nodes.json` | Node manifest (additive only) |
 | `scripts/nunchaku_versions.json` | Version matrix for nunchaku node |
-| `Install.bat` / `Install.sh` | Zero-dependency bootstrap: downloads uv, creates venv, launches CLI |
+| `Install.bat` / `Install.sh` | Zero-dependency bootstrap: downloads uv, creates venv (system Python preferred), launches CLI |
 | `bootstrap/` | Legacy bootstrap scripts (kept for reference). |
 | `tests/` | pytest test suite |
 
@@ -188,6 +188,8 @@ torch_url = "https://download.pytorch.org/whl/cu130"
 | Call `log.step()` more than once per phase | Count steps carefully — it increments the counter |
 | Forget to update `total_steps` in `phase1.py` | Count all `log.step()` calls across phase1 + phase2 |
 | Put files in `ComfyUI/` directly | Use junction architecture (external folders) |
+| Use `set /p VAR<"file"` inside `if (...)` in `.bat` | Use single-line: `if exist "file" set /p VAR=<"file"` |
+| Use `call activate.bat` for venv | Set `PATH` and `VIRTUAL_ENV` directly (activate.bat has locale bugs) |
 | Use `shell=True` in subprocess | Use explicit argument lists via `run_and_log()` |
 
 ## Adding New Features
