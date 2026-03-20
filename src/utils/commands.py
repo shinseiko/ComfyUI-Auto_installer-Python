@@ -74,6 +74,8 @@ def run_and_log(
             full_args,
             capture_output=True,
             text=True,
+            encoding="utf-8",
+            errors="replace",
             cwd=cwd,
             timeout=timeout,
             env=run_env,
