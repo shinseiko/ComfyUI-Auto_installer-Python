@@ -11,7 +11,8 @@ set "PYTHONUTF8=1"
 :: ============================================================================
 
 set "InstallPath=%~dp0"
-if "%InstallPath:~-1%"=="\" set "InstallPath=%InstallPath:~0,-1%"
+:: %~dp0 always ends with backslash — strip it unconditionally
+set "InstallPath=%InstallPath:~0,-1%"
 
 :: --- Environment Detection ---
 set "InstallType=venv"
