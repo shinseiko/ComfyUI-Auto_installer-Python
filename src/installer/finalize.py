@@ -229,7 +229,6 @@ def _write_bat_launcher(
 
     content = template_path.read_text(encoding="utf-8").format(
         name=name, mode_label=mode_label, args=args,
-        install_path=str(install_path).rstrip("\\"),
     )
     script_path.write_text(content, encoding="utf-8")
     log.sub(f"{script_path.name} created.", style="success")
@@ -287,7 +286,6 @@ def _write_bat_tool(
 
     content = template_path.read_text(encoding="utf-8").format(
         name=name, label=label, command=command,
-        install_path=str(install_path).rstrip("\\"),
     )
     script_path.write_text(content, encoding="utf-8")
     log.sub(f"{script_path.name} created.", style="success")
