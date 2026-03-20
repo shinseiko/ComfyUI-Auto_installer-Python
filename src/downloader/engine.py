@@ -190,7 +190,7 @@ def load_catalog(path: Path) -> ModelCatalog:
     sources_data = raw.get("_sources", {})
     if sources_data:
         catalog.sources = SourcesConfig.model_validate(sources_data)
-        
+
     path_mapping = raw.get("_path_mapping", {})
     if path_mapping:
         catalog.path_mapping.update(path_mapping)

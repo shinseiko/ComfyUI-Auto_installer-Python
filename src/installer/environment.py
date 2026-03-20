@@ -288,7 +288,7 @@ def find_source_scripts() -> Path:
     """
     package_root = Path(__file__).resolve().parent.parent.parent
     candidate = package_root / "scripts"
-    
+
     if not candidate.exists() or not (candidate / "dependencies.json").exists():
         raise FileNotFoundError(
             f"Crucial source directory missing: {candidate}. "

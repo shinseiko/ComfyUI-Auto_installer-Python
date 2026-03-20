@@ -109,6 +109,9 @@ def download_models(
 ) -> None:
     """Download model packs for ComfyUI from the unified catalog."""
     from src.downloader.engine import (
+        download_variant as dl_variant,
+    )
+    from src.downloader.engine import (
         interactive_download,
         list_bundles,
         load_catalog,

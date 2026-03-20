@@ -75,14 +75,14 @@ class Platform(ABC):
             return True
         if not path.exists():
             return False
-            
+
         # Path.is_junction() is Python 3.12+
         if hasattr(path, "is_junction"):
             return path.is_junction()
         # Fallback to os.path for Python 3.11
         if hasattr(os.path, "isjunction"):
             return os.path.isjunction(str(path))
-            
+
         return False
 
 
