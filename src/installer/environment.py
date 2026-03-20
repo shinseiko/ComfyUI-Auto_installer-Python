@@ -69,26 +69,40 @@ def setup_environment(
         else:
             # Try uv first — it handles Python download automatically
             if check_command_exists("uv"):
-                log.item("Creating venv with uv (Python >=3.11 auto-managed)...")
+                log.item("Creating Python environment...")
                 try:
-                    run_and_log("uv", ["venv", str(venv_path), "--python", ">=3.11,<3.14", "--seed", "--link-mode", "copy"])
-                    log.sub("Virtual environment created via uv.", style="success")
+                    # Prefer the user's existing system Python
+                    run_and_log("uv", ["venv", str(venv_path), "--python", ">=3.11,<3.14",
+                                       "--python-preference", "only-system",
+                                       "--seed", "--link-mode", "copy"])
+                    log.sub("Virtual environment created (system Python).", style="success")
                 except CommandError:
-                    log.warning("uv venv creation failed, falling back to system Python.", level=2)
-                else:
-                    pass
+                    # No compatible system Python — let uv download one
+                    log.item("No compatible system Python found, downloading via uv...")
+                    try:
+                        run_and_log("uv", ["venv", str(venv_path), "--python", ">=3.11,<3.14",
+                                           "--seed", "--link-mode", "copy"])
+                        log.sub("Virtual environment created (uv-managed Python).", style="success")
+                    except CommandError:
+                        log.warning("uv venv creation failed, falling back to system Python.", level=2)
             else:
                 # Also check for uv in scripts/uv/ (installed by bootstrap)
                 local_uv = scripts_dir / "uv" / ("uv.exe" if sys.platform == "win32" else "uv")
                 if local_uv.exists():
-                    log.item("Creating venv with local uv (Python >=3.11 auto-managed)...")
+                    log.item("Creating Python environment...")
                     try:
-                        run_and_log(str(local_uv), ["venv", str(venv_path), "--python", ">=3.11,<3.14", "--seed", "--link-mode", "copy"])
-                        log.sub("Virtual environment created via uv.", style="success")
+                        run_and_log(str(local_uv), ["venv", str(venv_path), "--python", ">=3.11,<3.14",
+                                                    "--python-preference", "only-system",
+                                                    "--seed", "--link-mode", "copy"])
+                        log.sub("Virtual environment created (system Python).", style="success")
                     except CommandError:
-                        log.warning("uv venv creation failed, falling back to system Python.", level=2)
-                    else:
-                        pass
+                        log.item("No compatible system Python found, downloading via uv...")
+                        try:
+                            run_and_log(str(local_uv), ["venv", str(venv_path), "--python", ">=3.11,<3.14",
+                                                        "--seed", "--link-mode", "copy"])
+                            log.sub("Virtual environment created (uv-managed Python).", style="success")
+                        except CommandError:
+                            log.warning("uv venv creation failed.", level=2)
                 else:
                     pass
 
