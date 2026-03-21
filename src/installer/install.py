@@ -205,14 +205,51 @@ def run_install(
     log.step("External Folders Architecture")
     setup_junction_architecture(install_path, comfy_path, log)
 
+    # ── Step 6b: CUDA Version Detection ────────────────────────────
+    from src.utils.gpu import cuda_tag_from_version, detect_cuda_version
+    from src.utils.prompts import confirm
+
+    if platform.name == "macos":
+        log.sub("macOS detected — skipping NVIDIA/CUDA detection (using MPS).", style="info")
+        cuda_tag = None
+    else:
+        cuda_version = detect_cuda_version()
+        cuda_tag = cuda_tag_from_version(cuda_version)
+        supported = deps.pip_packages.supported_cuda_tags
+
+        if cuda_tag and cuda_tag in supported:
+            log.sub(f"CUDA {cuda_version[0]}.{cuda_version[1]} detected → using {cuda_tag}", style="success")
+        elif cuda_tag and cuda_tag not in supported:
+            log.warning(
+                f"CUDA {cuda_version[0]}.{cuda_version[1]} detected (tag: {cuda_tag}) "
+                f"but not in supported list: {', '.join(supported)}.",
+                level=1,
+            )
+            cuda_tag = supported[0] if supported else "cu130"
+            log.sub(f"Falling back to {cuda_tag}.", style="warning")
+        elif cuda_version and not cuda_tag:
+            log.warning(
+                f"CUDA {cuda_version[0]}.{cuda_version[1]} is too old. "
+                f"Supported: {', '.join(supported)}.",
+                level=1,
+            )
+            if not confirm("Continue anyway with the latest CUDA config?", default=False):
+                raise InstallerFatalError("CUDA version incompatible. Aborting.")
+            cuda_tag = supported[0] if supported else "cu130"
+        else:
+            log.warning("No NVIDIA GPU / CUDA detected.", level=1)
+            if not confirm("Continue anyway? (PyTorch will install without GPU support)", default=False):
+                raise InstallerFatalError("No CUDA detected. Aborting.")
+            cuda_tag = supported[0] if supported else "cu130"
+
     # ── Step 7: Core Dependencies ─────────────────────────────────
     log.step("Core Dependencies")
-    install_core_dependencies(python_exe, comfy_path, deps, log)
+    install_core_dependencies(python_exe, comfy_path, deps, log, cuda_tag=cuda_tag)  # type: ignore
 
     # ── Step 8: Python Packages ───────────────────────────────────
     log.step("Installing Python Packages")
     install_python_packages(python_exe, deps, log)
-    install_wheels(python_exe, install_path, deps, log)
+    install_wheels(python_exe, install_path, deps, log, cuda_tag=cuda_tag)  # type: ignore
 
     # ── Step 9: Custom Nodes ──────────────────────────────────────────
     log.step(f"Custom Nodes ({node_tier})")
@@ -244,6 +281,7 @@ def run_install(
     summary.add_row("Install Path", str(install_path))
     summary.add_row("Environment", install_type.value)
     summary.add_row("Node Tier", node_tier.value)
+    summary.add_row("CUDA", cuda_tag)
     summary.add_row("Python", str(python_exe))
     summary.add_row("Platform", platform.name)
     from src.utils.logging import console

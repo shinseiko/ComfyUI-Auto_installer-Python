@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import subprocess
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import patch
 
 import pytest
 
 from src.utils.python_info import detect_venv_python_version
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestDetectVenvPythonVersion:
@@ -35,33 +38,29 @@ class TestDetectVenvPythonVersion:
         mock_result = subprocess.CompletedProcess(
             args=[], returncode=1, stdout="", stderr="error"
         )
-        with patch("subprocess.run", return_value=mock_result):
-            with pytest.raises(RuntimeError, match="exit 1"):
-                detect_venv_python_version(tmp_path / "python")
+        with patch("subprocess.run", return_value=mock_result), pytest.raises(RuntimeError, match="exit 1"):
+            detect_venv_python_version(tmp_path / "python")
 
     def test_raises_on_unexpected_output(self, tmp_path: Path) -> None:
         """Should raise RuntimeError if output format is unexpected."""
         mock_result = subprocess.CompletedProcess(
             args=[], returncode=0, stdout="Python 3.13\n", stderr=""
         )
-        with patch("subprocess.run", return_value=mock_result):
-            with pytest.raises(RuntimeError, match="parse"):
-                detect_venv_python_version(tmp_path / "python")
+        with patch("subprocess.run", return_value=mock_result), pytest.raises(RuntimeError, match="parse"):
+            detect_venv_python_version(tmp_path / "python")
 
     def test_raises_on_timeout(self, tmp_path: Path) -> None:
         """Should raise RuntimeError if subprocess times out."""
         with patch(
             "subprocess.run",
             side_effect=subprocess.TimeoutExpired(cmd="python", timeout=10),
-        ):
-            with pytest.raises(RuntimeError, match="Failed"):
-                detect_venv_python_version(tmp_path / "python")
+        ), pytest.raises(RuntimeError, match="Failed"):
+            detect_venv_python_version(tmp_path / "python")
 
     def test_raises_on_file_not_found(self, tmp_path: Path) -> None:
         """Should raise RuntimeError if python executable doesn't exist."""
         with patch(
             "subprocess.run",
             side_effect=FileNotFoundError("No such file"),
-        ):
-            with pytest.raises(RuntimeError, match="Failed"):
-                detect_venv_python_version(tmp_path / "python")
+        ), pytest.raises(RuntimeError, match="Failed"):
+            detect_venv_python_version(tmp_path / "python")

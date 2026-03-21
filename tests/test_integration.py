@@ -10,7 +10,7 @@ def test_dependencies_parsing():
 
     deps = load_dependencies(Path("scripts/dependencies.json"))
     assert deps.repositories.comfyui.url.startswith("https://")
-    assert "torch" in deps.pip_packages.torch.packages
+    assert "torch" in deps.pip_packages.get_torch("cu130").packages  # type: ignore
     assert len(deps.pip_packages.wheels) >= 1
     assert len(deps.pip_packages.standard) >= 5
 

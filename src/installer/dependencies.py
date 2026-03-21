@@ -32,6 +32,8 @@ def install_core_dependencies(
     comfy_path: Path,
     deps: DependenciesConfig,
     log: InstallerLogger,
+    *,
+    cuda_tag: str = "cu130",
 ) -> None:
     """Install PyTorch and ComfyUI requirements.
 
@@ -45,16 +47,31 @@ def install_core_dependencies(
         comfy_path: ComfyUI repository directory.
         deps: Parsed ``dependencies.json``.
         log: Installer logger for user-facing messages.
+        cuda_tag: CUDA tag to select PyTorch variant, e.g. ``"cu130"``.
     """
 
-    # PyTorch
-    torch_pkgs = deps.pip_packages.torch.packages.split()
-    log.item(f"Installing PyTorch ({', '.join(torch_pkgs)})...")
-    uv_install(
-        python_exe,
-        torch_pkgs,
-        index_url=deps.pip_packages.torch.index_url,
-    )
+    # For macOS (MPS/CPU), install standard torch from PyPI without index_url
+    if cuda_tag is None:
+        torch_pkgs = deps.pip_packages.get_torch("cu130").packages.split()  # type: ignore
+        # Strip the +cuXXX suffix for macOS
+        torch_pkgs = [p.split("+")[0] for p in torch_pkgs]
+        log.item(f"Installing PyTorch ({', '.join(torch_pkgs)}) [macOS/CPU]...")
+        uv_install(python_exe, torch_pkgs)
+
+    # For Windows/Linux with CUDA
+    else:
+        torch_cfg = deps.pip_packages.get_torch(cuda_tag)
+        if torch_cfg is None:
+            log.warning(f"No PyTorch config found for CUDA tag '{cuda_tag}'. Skipping.", level=1)
+            return
+
+        torch_pkgs = torch_cfg.packages.split()
+        log.item(f"Installing PyTorch ({', '.join(torch_pkgs)}) [{cuda_tag}]...")
+        uv_install(
+            python_exe,
+            torch_pkgs,
+            index_url=torch_cfg.index_url,
+        )
 
     # ComfyUI requirements
     req_file = comfy_path / deps.pip_packages.comfyui_requirements
@@ -77,8 +94,18 @@ def install_python_packages(
     """
 
     if deps.pip_packages.standard:
-        log.item(f"Installing {len(deps.pip_packages.standard)} standard packages...")
-        uv_install(python_exe, deps.pip_packages.standard)
+        pkgs = deps.pip_packages.standard.copy()
+
+        # Filter out CUDA-specific logic if no CUDA tag (macOS)
+        from src.platform.base import get_platform
+        if get_platform().name == "macos":
+            log.info("Filtering out CUDA-only standard packages for macOS.")
+            pkgs = [p for p in pkgs if not p.startswith("cupy-cuda")]
+            if "onnxruntime-gpu" in pkgs:
+                pkgs[pkgs.index("onnxruntime-gpu")] = "onnxruntime"
+
+        log.item(f"Installing {len(pkgs)} standard packages...")
+        uv_install(python_exe, pkgs)
 
 
 def install_wheels(
@@ -86,6 +113,8 @@ def install_wheels(
     install_path: Path,
     deps: DependenciesConfig,
     log: InstallerLogger,
+    *,
+    cuda_tag: str = "cu130",
 ) -> None:
     """Download and install pre-built ``.whl`` packages.
 
@@ -98,6 +127,7 @@ def install_wheels(
         install_path: Root installation directory.
         deps: Parsed ``dependencies.json``.
         log: Installer logger for user-facing messages.
+        cuda_tag: CUDA tag for CUDA-aware wheel selection.
     """
     if not deps.pip_packages.wheels:
         return
@@ -111,7 +141,7 @@ def install_wheels(
     scripts_dir = install_path / "scripts"
 
     for wheel in deps.pip_packages.wheels:
-        resolved = wheel.resolve(py_version)
+        resolved = wheel.resolve(py_version, cuda_tag=cuda_tag)
         if resolved is None:
             log.warning(
                 f"No wheel available for {wheel.name} on Python {py_version[0]}.{py_version[1]}, skipping.",

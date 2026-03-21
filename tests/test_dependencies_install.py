@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from pathlib import Path
+from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 from src.installer.dependencies import (
@@ -11,6 +11,9 @@ from src.installer.dependencies import (
     install_python_packages,
     install_wheels,
 )
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 class TestInstallCoreDependencies:
@@ -28,8 +31,8 @@ class TestInstallCoreDependencies:
         req_file.write_text("torch\n")
 
         deps = MagicMock()
-        deps.pip_packages.torch.packages = "torch torchvision"
-        deps.pip_packages.torch.index_url = "https://example.com/whl/cu130"
+        deps.pip_packages.get_torch.return_value.packages = "torch torchvision"
+        deps.pip_packages.get_torch.return_value.index_url = "https://example.com/whl/cu130"
         deps.pip_packages.comfyui_requirements = "requirements.txt"
 
         with patch("src.installer.dependencies.uv_install") as mock_uv:
@@ -49,8 +52,8 @@ class TestInstallCoreDependencies:
         comfy_path.mkdir()
 
         deps = MagicMock()
-        deps.pip_packages.torch.packages = "torch"
-        deps.pip_packages.torch.index_url = "https://example.com"
+        deps.pip_packages.get_torch.return_value.packages = "torch"
+        deps.pip_packages.get_torch.return_value.index_url = "https://example.com"
         deps.pip_packages.comfyui_requirements = "requirements.txt"
 
         with patch("src.installer.dependencies.uv_install") as mock_uv:
@@ -99,7 +102,9 @@ class TestInstallWheels:
 
         wheel_mock = MagicMock()
         wheel_mock.name = "test-package"
-        wheel_mock.resolve.return_value = ("test_pkg-1.0-cp313", "https://example.com/test.whl", None)
+        def mock_resolve(py_ver, **kwargs):
+            return ("test_pkg-1.0-cp313", "https://example.com/test.whl", None)
+        wheel_mock.resolve.side_effect = mock_resolve
 
         deps = MagicMock()
         deps.pip_packages.wheels = [wheel_mock]

@@ -105,7 +105,8 @@ def get_platform() -> Platform:
 
         return LinuxPlatform()
     elif sys.platform == "darwin":
-        # Future: from src.platform.macos import MacOSPlatform
-        raise NotImplementedError("macOS support is planned but not yet implemented.")
+        from src.platform.macos import MacOSPlatform
+
+        return MacOSPlatform()
     else:
         raise NotImplementedError(f"Platform '{sys.platform}' is not supported.")

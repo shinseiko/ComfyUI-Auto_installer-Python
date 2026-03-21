@@ -62,23 +62,34 @@ class WheelConfig(BaseModel):
     versions: dict[str, str] = Field(default_factory=dict)
     checksums: dict[str, str] = Field(default_factory=dict)
 
-    def resolve(self, python_version: tuple[int, int]) -> tuple[str, str, str | None] | None:
-        """Pick the wheel matching the running Python.
+    def resolve(
+        self,
+        python_version: tuple[int, int],
+        cuda_tag: str = "",
+    ) -> tuple[str, str, str | None] | None:
+        """Pick the wheel matching the running Python and CUDA version.
+
+        Resolution order for versioned wheels:
+        1. ``{cuda_tag}_{cpython_tag}`` — exact CUDA + Python match
+        2. ``{cpython_tag}`` — CUDA-agnostic fallback
 
         Args:
             python_version: (major, minor) tuple, e.g. (3, 13).
+            cuda_tag: CUDA tag, e.g. ``"cu130"`` or ``"cu128"``.
 
         Returns:
             (name, url, sha256_or_None) tuple, or None if no match.
         """
-        tag = f"cp{python_version[0]}{python_version[1]}"
+        cp_tag = f"cp{python_version[0]}{python_version[1]}"
 
         if self.versions:
-            url = self.versions.get(tag)
-            if url:
-                whl_name = url.rsplit("/", 1)[-1].removesuffix(".whl")
-                checksum = self.checksums.get(tag)
-                return whl_name, url, checksum
+            # Try CUDA-specific key first, then cpython-only fallback
+            for key in ([f"{cuda_tag}_{cp_tag}", cp_tag] if cuda_tag else [cp_tag]):
+                url = self.versions.get(key)
+                if url:
+                    whl_name = url.rsplit("/", 1)[-1].removesuffix(".whl")
+                    checksum = self.checksums.get(key)
+                    return whl_name, url, checksum
             return None
 
         # Legacy: flat name + url (assumed to match current Python)
@@ -91,11 +102,45 @@ class PipPackages(BaseModel):
     """All pip package configurations."""
 
     upgrade: list[str] = Field(default_factory=lambda: ["pip", "wheel"])
-    torch: TorchConfig = Field(default_factory=TorchConfig)
+    torch: dict[str, TorchConfig] | TorchConfig = Field(
+        default_factory=lambda: {
+            "cu130": TorchConfig(
+                packages="torch==2.10.0+cu130 torchvision torchaudio xformers",
+                index_url="https://download.pytorch.org/whl/cu130",
+            ),
+            "cu128": TorchConfig(
+                packages="torch==2.10.0+cu128 torchvision torchaudio xformers",
+                index_url="https://download.pytorch.org/whl/cu128",
+            ),
+        }
+    )
     comfyui_requirements: str = "requirements.txt"
     wheels: list[WheelConfig] = Field(default_factory=list)
     standard: list[str] = Field(default_factory=list)
     git_repos: list[str] = Field(default_factory=list)
+
+    def get_torch(self, cuda_tag: str) -> TorchConfig | None:
+        """Get the TorchConfig for a specific CUDA tag.
+
+        Handles both legacy (single TorchConfig) and multi-CUDA (dict) formats.
+
+        Args:
+            cuda_tag: CUDA tag, e.g. ``"cu130"`` or ``"cu128"``.
+
+        Returns:
+            Matching TorchConfig, or ``None`` if not available.
+        """
+        if isinstance(self.torch, dict):
+            return self.torch.get(cuda_tag)
+        # Legacy single TorchConfig — return it for any tag
+        return self.torch
+
+    @property
+    def supported_cuda_tags(self) -> list[str]:
+        """List supported CUDA tags from the torch configuration."""
+        if isinstance(self.torch, dict):
+            return list(self.torch.keys())
+        return []
 
 
 class RepositoryConfig(BaseModel):

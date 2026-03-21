@@ -25,22 +25,34 @@
   "pip_packages": {
     "upgrade": [],
     "torch": {
-      "packages": "torch==2.10.0+cu130 torchvision torchaudio xformers",
-      "index_url": "https://download.pytorch.org/whl/cu130"
+      "cu130": {
+        "packages": "torch==2.10.0+cu130 torchvision torchaudio xformers",
+        "index_url": "https://download.pytorch.org/whl/cu130"
+      },
+      "cu128": {
+        "packages": "torch==2.10.0+cu128 torchvision torchaudio xformers",
+        "index_url": "https://download.pytorch.org/whl/cu128"
+      }
     },
     "comfyui_requirements": "requirements.txt",
     "wheels": [
       {
         "name": "nunchaku",
         "versions": {
-          "cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-win_amd64.whl",
-          "cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-win_amd64.whl",
-          "cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl"
+          "cu130_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-win_amd64.whl",
+          "cu130_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-win_amd64.whl",
+          "cu130_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl",
+          "cu128_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp311-cp311-win_amd64.whl",
+          "cu128_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp312-cp312-win_amd64.whl",
+          "cu128_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp313-cp313-win_amd64.whl"
         },
         "checksums": {
-          "cp311": "a31fbb48650f9a5c0ed48e447f34e64e471318ff3466f73c9167a09bede28771",
-          "cp312": "20d8c4cef6664c2dd6f2d44155e6dd2d4d36163439f70da31ef945af3c8c6149",
-          "cp313": "d3a922fa918fb2c3c815bf4fc5645ce663ec5354e7c026b384269813785b913d"
+          "cu130_cp311": "a31fbb48650f9a5c0ed48e447f34e64e471318ff3466f73c9167a09bede28771",
+          "cu130_cp312": "20d8c4cef6664c2dd6f2d44155e6dd2d4d36163439f70da31ef945af3c8c6149",
+          "cu130_cp313": "d3a922fa918fb2c3c815bf4fc5645ce663ec5354e7c026b384269813785b913d",
+          "cu128_cp311": "75100b7f6f9e04738f575b778a075f4e6d51861d7786773aa32a20ead76c0fec",
+          "cu128_cp312": "9257183fa7789be92f67a22f715ee31ed488e154913ef3946502320c6d1d9dea",
+          "cu128_cp313": "94021d1f2691bb35a3b5c64306fe7a5c5864a6c4c2c0fef3dbff46aaaf6c0953"
         }
       },
       {

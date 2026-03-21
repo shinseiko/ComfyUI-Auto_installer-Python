@@ -145,6 +145,28 @@ class TestWheelConfigChecksums:
         result = whl.resolve((3, 13))
         assert result == ("pkg", "https://example.com/pkg.whl", "deadbeef")
 
+    def test_resolve_cuda_tag_exact_match(self) -> None:
+        """resolve() uses {cuda}_{cpython} composite tag when available."""
+        from src.config import WheelConfig
+        whl = WheelConfig(
+            name="pkg",
+            versions={"cu130_cp313": "https://example.com/pkg-cu130.whl"},
+            checksums={"cu130_cp313": "deadbeef"},
+        )
+        result = whl.resolve((3, 13), cuda_tag="cu130")
+        assert result == ("pkg-cu130", "https://example.com/pkg-cu130.whl", "deadbeef")
+
+    def test_resolve_cuda_tag_fallback(self) -> None:
+        """resolve() falls back to just {cpython} if cuda tag provided but not in dict."""
+        from src.config import WheelConfig
+        whl = WheelConfig(
+            name="pkg",
+            versions={"cp313": "https://example.com/pkg-any.whl"},
+            checksums={"cp313": "beef"},
+        )
+        result = whl.resolve((3, 13), cuda_tag="cu130")
+        assert result == ("pkg-any", "https://example.com/pkg-any.whl", "beef")
+
     def test_resolve_returns_none_checksum_when_missing(self) -> None:
         """resolve() returns None for sha256 when no checksum entry."""
         from src.config import WheelConfig
@@ -163,4 +185,35 @@ class TestWheelConfigChecksums:
             versions={"cp313": "https://example.com/pkg.whl"},
         )
         assert whl.resolve((3, 11)) is None
+
+
+class TestPipPackagesGetTorch:
+    """Tests for multi-CUDA PyTorch selection."""
+
+    def test_get_torch_from_dict(self) -> None:
+        """get_torch() retrieves the correct config from a multi-CUDA dict."""
+        from src.config import PipPackages, TorchConfig
+        pkgs = PipPackages(torch={
+            "cu130": TorchConfig(index_url="url/cu130"),
+            "cu128": TorchConfig(index_url="url/cu128")
+        })
+        assert pkgs.get_torch("cu130").index_url == "url/cu130"
+        assert pkgs.get_torch("cu128").index_url == "url/cu128"
+        assert pkgs.get_torch("cu118") is None
+
+    def test_get_torch_legacy(self) -> None:
+        """get_torch() falls back to returning the single TorchConfig if dict format not used."""
+        from src.config import PipPackages, TorchConfig
+        cfg = TorchConfig(index_url="url/legacy")
+        pkgs = PipPackages(torch=cfg)
+        assert pkgs.get_torch("cu130").index_url == "url/legacy"
+        assert pkgs.get_torch("cu128").index_url == "url/legacy"
+
+    def test_supported_cuda_tags(self) -> None:
+        from src.config import PipPackages, TorchConfig
+        pkgs = PipPackages(torch={
+            "cu130": TorchConfig(index_url="url/cu130"),
+            "cu128": TorchConfig(index_url="url/cu128")
+        })
+        assert set(pkgs.supported_cuda_tags) == {"cu130", "cu128"}
 
