@@ -120,7 +120,7 @@
 ## 9. Testing
 
 - [x] CI test matrix: Ubuntu + Windows, Python 3.11/3.12/3.13 (6 test jobs)
-- [x] CI coverage threshold (`--fail-under=50`) on Ubuntu + Windows
+- [x] CI coverage threshold (`--fail-under=70`) on Ubuntu + Windows
 - [x] Node.js 24 migration prep (`FORCE_JAVASCRIPT_ACTIONS_TO_NODE24`)
 - [x] CLI smoke tests (`test_cli_smoke.py`)
 - [x] SHA-256 config tests (`test_config.py`)
@@ -136,7 +136,7 @@
 ## 10. Future Features
 
 ### ~~10.1 Container Support~~ ✅
-> **Done:** Full Docker support with lightweight image (~5 GB), `--skip-nodes` for build-time, runtime entrypoint for custom nodes, volumes on host drive, CI smoke test.
+> **Done:** Full Docker support with CUDA 13.0 runtime, `--skip-nodes` for build-time, runtime entrypoint for custom nodes, volumes on host drive, CI smoke test.
 - [x] Dockerfile + docker-compose.yml
 - [x] NVIDIA Container Toolkit support
 - [x] Volume mapping for models/outputs
@@ -148,12 +148,15 @@
 ### ~~10.2 CI/CD Pipeline~~ ✅
 > **Done:** Full CI matrix with lint, security audit, tests, coverage, Windows E2E, Docker smoke test.
 - [x] CI matrix: Ubuntu + Windows × Python 3.11/3.12/3.13
-- [x] Coverage threshold enforcement (50%)
+- [x] Coverage threshold enforcement (70%)
 - [x] Automated testing on fresh Windows VMs (full install smoke test)
 - [x] Docker build & smoke test (ubuntu-latest)
 
-### ~~10.3 Release Signing~~ → Deferred
-> Not applicable — no releases published. Installation via git clone / one-liner.
+### 10.3 CI Release Automation
+> **TODO:** Automate GitHub Releases via a CI workflow triggered by git tags (e.g. `v5.0.0-alpha.2`). Steps: run tests, build changelog excerpt, create GitHub Release with assets.
+- [ ] `release.yml` workflow — triggered on `v*` tags
+- [ ] Extract changelog section for the tag
+- [ ] Create GitHub Release with release notes
 
 ### ~~10.4 macOS Support~~ ✅
 > **Done:** `MacOSPlatform` implemented. Native MPS/CPU handled automatically without CUDA contamination. Badge added to README. Tests added.
@@ -165,4 +168,5 @@
 
 ## Priority Order (Updated 2026-03-21)
 
-🎉 **All planned items are now completed or intentionally removed.** No open items remain.
+**One open item remains:**
+1. **10.3 CI Release Automation** — GitHub Release workflow triggered by git tags
