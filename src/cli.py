@@ -58,6 +58,16 @@ def install(
         "--yes", "-y",
         help="Non-interactive mode: accept all defaults without prompting.",
     ),
+    cuda_version: str = typer.Option(
+        "",
+        "--cuda",
+        help="Force a specific CUDA version tag (e.g. 'cu124', 'cu130', 'cpu'). Bypasses auto-detection.",
+    ),
+    skip_nodes: bool = typer.Option(
+        False,
+        "--skip-nodes",
+        help="Skip custom node installation (useful for Docker builds where nodes are handled at runtime).",
+    ),
 ) -> None:
     """Install ComfyUI with all dependencies and custom nodes."""
     from src.installer.install import run_install
@@ -80,7 +90,7 @@ def install(
         ) from e
 
     path = _clean_path(path)
-    run_install(path, install_type_enum, verbose=verbose, node_tier=node_tier_enum)
+    run_install(path, install_type_enum, verbose=verbose, node_tier=node_tier_enum, cuda_version=cuda_version, skip_nodes=skip_nodes)
 
 
 @app.command()

@@ -4,6 +4,8 @@ services:
     image: umeairt/comfyui:latest
     container_name: umeairt-comfyui
     restart: unless-stopped
+    user: root
+    entrypoint: ["bash", "-c", "chown -R umeairt:umeairt /app/custom_nodes /app/models /app/output /app/input /app/user && su umeairt -c /app/entrypoint.sh"]
     ports:
       - "8188:8188"
     volumes:
@@ -11,11 +13,11 @@ services:
       # This isolates your heavy downloads and generated images outside the container.
       # Upon first boot, the entrypoint will automatically clone missing custom nodes
       # into the empty bindings!
-      - ./docker_data/models:/app/models
-      - ./docker_data/custom_nodes:/app/custom_nodes
-      - ./docker_data/output:/app/output
-      - ./docker_data/input:/app/input
-      - ./docker_data/user:/app/user
+      - E:/AI/dev/docker/models:/app/models
+      - E:/AI/dev/docker/custom_nodes:/app/custom_nodes
+      - E:/AI/dev/docker/output:/app/output
+      - E:/AI/dev/docker/input:/app/input
+      - E:/AI/dev/docker/user:/app/user
     deploy:
       resources:
         reservations:

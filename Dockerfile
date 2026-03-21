@@ -19,16 +19,20 @@ WORKDIR /app
 RUN useradd -m -u 1000 umeairt && \
     chown -R umeairt:umeairt /app
 
-USER umeairt
-
 # Copy the installer repository into the container
 COPY --chown=umeairt:umeairt . /app
 
-# Pre-install ComfyUI during the image build phase.
-# This downloads PyTorch, clones repositories, and pre-populates the external linked folders.
-# (If building on a machine without a GPU, it detects CPU and installs fallback CPU wheels,
-# making the build safe on standard CI runners).
-RUN python -m src.cli install --path /app --type venv --yes
+# Install the installer dependencies globally as root
+RUN uv pip install --system -e .
+
+# Now switch to the non-root user
+USER umeairt
+
+# Pre-install ComfyUI core during the image build phase.
+# This downloads PyTorch with CUDA, installs ComfyUI requirements, and sets up the venv.
+# Custom nodes are NOT installed here (--skip-nodes) to keep the image small;
+# they are installed at runtime by the entrypoint into the mounted volumes.
+RUN python -m src.cli install --path /app --type venv --yes --cuda cu130 --skip-nodes
 
 # Give execution permission to the entrypoint
 RUN chmod +x /app/entrypoint.sh

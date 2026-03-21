@@ -130,12 +130,17 @@ def _pip_install_requirements(
         req_file: Path to requirements.txt file.
         log: Logger.
     """
-    uv_install(
-        python_exe,
-        requirements=req_file,
-        ignore_errors=True,
-        timeout=300,
-    )
+    from src.utils.commands import CommandError
+
+    try:
+        uv_install(
+            python_exe,
+            requirements=req_file,
+            ignore_errors=True,
+            timeout=900,  # 15 minutes for heavy nodes like Impact-Pack
+        )
+    except CommandError as e:
+        log.error(f"Failed to install requirements for {req_file.parent.name}: {e}")
 
 
 def install_node(

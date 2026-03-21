@@ -146,9 +146,14 @@ def install_wheels(
     scripts_dir = install_path / "scripts"
 
     for wheel in deps.pip_packages.wheels:
-        if wheel.name == "nunchaku" and (cuda_tag is None or not cuda_tag.startswith("cu")):
-            log.sub("Skipping nunchaku wheel (NVIDIA GPU required).", style="cyan")
-            continue
+        if wheel.name == "nunchaku":
+            from src.platform.base import get_platform
+            if get_platform().name != "windows":
+                log.sub("Skipping nunchaku wheel (Manifest contains Windows-only wheels).", style="cyan")
+                continue
+            if cuda_tag is None or not cuda_tag.startswith("cu"):
+                log.sub("Skipping nunchaku wheel (NVIDIA GPU required).", style="cyan")
+                continue
 
         resolved = wheel.resolve(py_version, cuda_tag=cuda_tag)
         if resolved is None:

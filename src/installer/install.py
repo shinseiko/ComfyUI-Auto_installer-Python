@@ -93,6 +93,8 @@ def run_install(
     *,
     verbose: bool = False,
     node_tier: NodeTier = NodeTier.FULL,
+    cuda_version: str = "",
+    skip_nodes: bool = False,
 ) -> None:
     """Run the complete ComfyUI installation in 12 unified steps.
 
@@ -209,19 +211,22 @@ def run_install(
     from src.utils.gpu import check_amd_gpu, cuda_tag_from_version, detect_cuda_version
     from src.utils.prompts import confirm
 
-    if platform.name == "macos":
+    if cuda_version:
+        cuda_tag = cuda_version
+        log.sub(f"Using manual GPU override: {cuda_tag}", style="success")
+    elif platform.name == "macos":
         log.sub("macOS detected — skipping GPU detection (using MPS).", style="info")
         cuda_tag = None
     else:
-        cuda_version = detect_cuda_version()
-        cuda_tag = cuda_tag_from_version(cuda_version)
+        cuda_version_detected = detect_cuda_version()
+        cuda_tag = cuda_tag_from_version(cuda_version_detected)
         supported = deps.pip_packages.supported_cuda_tags
 
         if cuda_tag and cuda_tag in supported:
-            log.sub(f"NVIDIA CUDA {cuda_version[0]}.{cuda_version[1]} detected → using {cuda_tag}", style="success")
-        elif cuda_version:  # Has NVIDIA, but toolkit unsupported
+            log.sub(f"NVIDIA CUDA {cuda_version_detected[0]}.{cuda_version_detected[1]} detected → using {cuda_tag}", style="success")
+        elif cuda_version_detected:  # Has NVIDIA, but toolkit unsupported
             log.warning(
-                f"NVIDIA CUDA {cuda_version[0]}.{cuda_version[1]} detected (tag: {cuda_tag}) "
+                f"NVIDIA CUDA {cuda_version_detected[0]}.{cuda_version_detected[1]} detected (tag: {cuda_tag}) "
                 f"but not in supported list: {', '.join(supported)}. (Falling back to cu130)",
                 level=1,
             )
@@ -251,12 +256,20 @@ def run_install(
     install_wheels(python_exe, install_path, deps, log, cuda_tag=cuda_tag)  # type: ignore
 
     # ── Step 9: Custom Nodes ──────────────────────────────────────────
-    log.step(f"Custom Nodes ({node_tier})")
-    install_custom_nodes(python_exe, comfy_path, install_path, log, node_tier=node_tier, source_dir=source_dir)
+    if skip_nodes:
+        log.step(f"Custom Nodes ({node_tier})")
+        log.sub("Skipped (--skip-nodes). Nodes will be installed at runtime.", style="cyan")
+    else:
+        log.step(f"Custom Nodes ({node_tier})")
+        install_custom_nodes(python_exe, comfy_path, install_path, log, node_tier=node_tier, source_dir=source_dir)
 
     # ── Step 10: Performance Optimizations ────────────────────────
-    log.step("Performance Optimizations")
-    install_optimizations(python_exe, comfy_path, install_path, deps, log)
+    if skip_nodes:
+        log.step("Performance Optimizations")
+        log.sub("Skipped (--skip-nodes). Optimizations will be applied at runtime.", style="cyan")
+    else:
+        log.step("Performance Optimizations")
+        install_optimizations(python_exe, comfy_path, install_path, deps, log)
 
     # ── Step 11: Finalization ─────────────────────────────────────
     log.step("Finalization")
