@@ -4,7 +4,7 @@
 ![Python](https://img.shields.io/badge/Python-3.11%20|%203.12%20|%203.13-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
-![Tests](https://img.shields.io/badge/Tests-215%2B%20passed-brightgreen.svg)
+![Tests](https://img.shields.io/badge/Tests-230%2B%20passed-brightgreen.svg)
 
 Cross-platform Python CLI to fully automate the installation, update, and configuration of ComfyUI. One-click setup with GPU optimizations, curated custom nodes, and VRAM-aware model downloads.
 
@@ -23,6 +23,7 @@ Cross-platform Python CLI to fully automate the installation, update, and config
 - **Multi-Source Downloads** — aria2c accelerated, with HuggingFace + ModelScope fallback
 - **Junction Architecture** — User data (models, outputs) persists independently from ComfyUI updates
 - **Smart Update** — One command to update ComfyUI core, all bundled nodes, and Python dependencies
+- **Model Security Scanner** — Detects malicious pickle code in `.ckpt`/`.pt` model files using `picklescan`
 - **Cross-Platform Launchers** — Generated `.bat`/`.sh` scripts (Performance, LowVRAM, Update, Download)
 - **Verbose Mode** — Clean output by default, detailed logging with `-v` flag
 
@@ -101,6 +102,7 @@ Four launcher scripts are generated in your install directory:
 umeairt-comfyui-installer install            # Full installation
 umeairt-comfyui-installer update             # Update ComfyUI + nodes + deps
 umeairt-comfyui-installer download-models    # Interactive model downloads
+umeairt-comfyui-installer scan-models        # Scan models for malicious pickle code
 umeairt-comfyui-installer info               # Display system info (GPU, Python, tools)
 umeairt-comfyui-installer version            # Show version
 ```
@@ -123,7 +125,7 @@ ComfyUI-Auto_installer/
 │   ├── platform/             # OS abstraction (Windows/Linux/macOS)
 │   └── utils/                # Logging, commands, packaging, GPU detection
 ├── scripts/                  # Config files (dependencies.json, custom_nodes.json)
-├── tests/                    # 203 tests (unit + integration)
+├── tests/                    # 230+ tests (unit + integration)
 ├── Install.bat / Install.sh  # Bootstrap entry points
 └── pyproject.toml            # Project metadata (hatchling)
 ```
@@ -192,6 +194,7 @@ uv run ruff check src/ tests/
 - **Secure subprocess calls** — no `shell=True`, explicit argument lists
 - **HTTPS only** — all download URLs validated
 - **Automated audits** — CI runs Bandit + pip-audit on every push
+- **Pickle model scanner** — Detects malicious code in `.ckpt`/`.pt` files via `picklescan` (auto-runs during updates)
 - **Zip slip prevention** — Archive extraction validates all paths stay within the target directory
 - **SHA-256 integrity** — Post-download checksum verification for all model files
 

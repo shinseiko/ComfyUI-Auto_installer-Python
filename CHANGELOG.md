@@ -25,6 +25,8 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - **Agentic documentation** — `AGENTS.md`, `.cursorrules`, `docs/codemaps/` with mermaid diagrams.
 - **203 automated tests** — unit and integration tests with pytest, 56% coverage.
 - **CI/CD pipeline** — Fast PR linting/testing matrix (`ci.yml`), plus a rigorous E2E manual workflow (`integration.yml`) that spins up a Windows VM, does a full install, and stream-validates all PyTorch/tool SHA-256 hashes.
+- **Docker support** — `Dockerfile` + `docker-compose.yml` with `--skip-nodes` for lightweight images (~5 GB). Custom nodes installed at runtime via entrypoint into persistent volumes. Docker CI smoke test in GitHub Actions.
+- **Model security scanner** — `scan-models` CLI command using `picklescan` to detect malicious pickle code in `.ckpt`/`.pt`/`.pth` model files. Non-blocking warning integrated into the update flow.
 
 ### Changed
 

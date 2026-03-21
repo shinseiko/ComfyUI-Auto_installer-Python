@@ -18,6 +18,7 @@ This installer implements the following security practices:
 - **Default local binding** — ComfyUI listens on `127.0.0.1` by default, not `0.0.0.0`
 - **No mutable global state** — Configuration is passed explicitly, not via global variables
 - **CI audits** — Bandit (SAST) and pip-audit run on every push via GitHub Actions
+- **Pickle model scanner** — `picklescan`-based detection of malicious code in `.ckpt`/`.pt`/`.pth` model files. Auto-runs during updates, available as `scan-models` CLI command.
 
 ## Reporting a Vulnerability
 

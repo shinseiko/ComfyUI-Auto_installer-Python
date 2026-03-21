@@ -33,10 +33,10 @@ pip install -e .
 pytest tests/ -q
 
 # Run the installer
-comfyui-installer install --path C:\path\to\install --type venv
+umeairt-comfyui-installer install --path C:\path\to\install --type venv
 
 # Run with verbose output
-comfyui-installer install --path C:\path\to\install -v
+umeairt-comfyui-installer install --path C:\path\to\install -v
 ```
 
 ## Architecture
@@ -158,7 +158,7 @@ The installer supports **NVIDIA** (`cu130`/`cu128`), **AMD** (`rocm71` on Linux,
 
 | Path | Purpose |
 |------|---------|
-| `src/cli.py` | Typer CLI entry point (install, update, download-models, info) |
+| `src/cli.py` | Typer CLI entry point (install, update, download-models, scan-models, info) |
 | `src/config.py` | Pydantic models for `dependencies.json` and user settings |
 | `src/installer/phase1.py` | Phase 1: system setup, Python, environment |
 | `src/installer/phase2.py` | Phase 2: ComfyUI, nodes, packages, launchers |
@@ -168,12 +168,14 @@ The installer supports **NVIDIA** (`cu130`/`cu128`), **AMD** (`rocm71` on Linux,
 | `src/utils/commands.py` | `run_and_log()`, `check_command_exists()` |
 | `src/utils/download.py` | Download with aria2c/urllib fallback |
 | `src/utils/gpu.py` | GPU detection, VRAM info |
+| `src/utils/model_scanner.py` | Pickle model security scanner (`picklescan`-based) |
 | `src/platform/` | Cross-platform abstractions (Windows/Linux) |
 | `src/downloader/engine.py` | Model catalog download system |
 | `scripts/dependencies.json` | URLs, packages, tools config |
 | `scripts/custom_nodes.json` | Node manifest (additive only) |
 | `scripts/nunchaku_versions.json` | Version matrix for nunchaku node |
 | `Install.bat` / `Install.sh` | Zero-dependency bootstrap: downloads uv, creates venv (system Python preferred), launches CLI |
+| `Dockerfile` / `docker-compose.yml` | Docker container with `--skip-nodes` for lightweight images, runtime entrypoint for nodes |
 | `bootstrap/` | Legacy bootstrap scripts (kept for reference). |
 | `tests/` | pytest test suite |
 
