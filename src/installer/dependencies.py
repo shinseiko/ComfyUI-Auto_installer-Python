@@ -147,7 +147,7 @@ def install_wheels(
 
     for wheel in deps.pip_packages.wheels:
         if wheel.name == "nunchaku" and (cuda_tag is None or not cuda_tag.startswith("cu")):
-            log.info("Skipping nunchaku wheel (NVIDIA GPU required).", level=2)
+            log.sub("Skipping nunchaku wheel (NVIDIA GPU required).", style="cyan")
             continue
 
         resolved = wheel.resolve(py_version, cuda_tag=cuda_tag)
