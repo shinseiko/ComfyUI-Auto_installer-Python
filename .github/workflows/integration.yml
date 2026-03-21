@@ -20,7 +20,7 @@ jobs:
           python-version: '3.13'
 
       - name: Install dependencies
-        run: pip install -e .
+        run: pip install -e . uv
 
       - name: Run Install Phase
         env:
