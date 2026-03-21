@@ -1,0 +1,27 @@
+services:
+  comfyui:
+    build: .
+    image: umeairt/comfyui:latest
+    container_name: umeairt-comfyui
+    restart: unless-stopped
+    ports:
+      - "8188:8188"
+    volumes:
+      # Map the auto-installer's external architecture directly to host directories.
+      # This isolates your heavy downloads and generated images outside the container.
+      # Upon first boot, the entrypoint will automatically clone missing custom nodes
+      # into the empty bindings!
+      - ./docker_data/models:/app/models
+      - ./docker_data/custom_nodes:/app/custom_nodes
+      - ./docker_data/output:/app/output
+      - ./docker_data/input:/app/input
+      - ./docker_data/user:/app/user
+    deploy:
+      resources:
+        reservations:
+          devices:
+            # NVIDIA Container Toolkit passthrough (Requires Windows WSL2 / Linux host with drivers installed)
+            # If you are using CPU-only or a non-NVIDIA GPU, comment out these 3 lines.
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]

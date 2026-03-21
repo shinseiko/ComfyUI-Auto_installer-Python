@@ -71,6 +71,19 @@ umeairt-comfyui-installer install --path /path/to/install --type venv
 umeairt-comfyui-installer install --path /path/to/install -v
 ```
 
+### Option D: Docker Container (Advanced)
+
+If you prefer an isolated container environment, a fully configured `docker-compose.yml` is provided. It binds your heavy data (Models, Custom Nodes, Outputs) to the host machine so you never lose data when upgrading.
+
+1. Ensure [Docker Desktop](https://www.docker.com/products/docker-desktop/) (or Docker Engine) and the [NVIDIA Container Toolkit](https://docs.nvidia.com/datacenter/cloud-native/container-toolkit/latest/install-guide.html) are installed.
+2. Clone this repository.
+3. Start the container in detached mode:
+   ```bash
+   docker-compose up -d
+   ```
+4. The first boot seamlessly clones any missing components into your host-mounted `./docker_data` folders.
+5. Access ComfyUI at `http://localhost:8188`!
+
 ## 📂 Post-Installation
 
 Four launcher scripts are generated in your install directory:

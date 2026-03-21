@@ -142,9 +142,9 @@
 
 ### 10.1 Container Support
 - **Priority:** Low — primary target is desktop users.
-- [ ] Dockerfile + docker-compose.yml
-- [ ] NVIDIA Container Toolkit support
-- [ ] Volume mapping for models/outputs
+- [x] Dockerfile + docker-compose.yml
+- [x] NVIDIA Container Toolkit support
+- [x] Volume mapping for models/outputs
 
 ### 10.2 CI/CD Pipeline
 - [x] CI matrix: Ubuntu + Windows × Python 3.11/3.12/3.13
@@ -165,6 +165,6 @@
 ## Priority Order (Updated)
 
 1. **Integration test in CI** — full install on Windows VM (§9) (✅ Done)
-2. **Container support** — for advanced users (§10.1)
+2. **Container support** — for advanced users (§10.1) (✅ Done)
 3. **Constraints file** — power user feature (§2.3)
 4. **Deprecation audit** — cosmetic (§4.2)
