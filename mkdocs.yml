@@ -1,0 +1,118 @@
+site_name: ComfyUI Auto-Installer
+site_description: Cross-platform automated installer for ComfyUI — full documentation
+site_url: https://umeairt.github.io/ComfyUI-Auto_installer-Python/
+repo_url: https://github.com/UmeAiRT/ComfyUI-Auto_installer-Python
+repo_name: UmeAiRT/ComfyUI-Auto_installer-Python
+
+theme:
+  name: material
+  palette:
+    - media: "(prefers-color-scheme: dark)"
+      scheme: slate
+      primary: indigo
+      accent: light blue
+      toggle:
+        icon: material/brightness-4
+        name: Switch to light mode
+    - media: "(prefers-color-scheme: light)"
+      scheme: default
+      primary: indigo
+      accent: light blue
+      toggle:
+        icon: material/brightness-7
+        name: Switch to dark mode
+  features:
+    - navigation.instant
+    - navigation.tabs
+    - navigation.sections
+    - navigation.expand
+    - navigation.top
+    - content.code.copy
+    - content.code.annotate
+    - search.suggest
+    - search.highlight
+    - toc.follow
+  icon:
+    repo: fontawesome/brands/github
+
+plugins:
+  - search
+  - mkdocstrings:
+      default_handler: python
+      handlers:
+        python:
+          options:
+            docstring_style: google
+            show_source: true
+            show_root_heading: true
+            show_root_full_path: false
+            show_symbol_type_heading: true
+            show_symbol_type_toc: true
+            members_order: source
+            merge_init_into_class: true
+            show_if_no_docstring: false
+
+markdown_extensions:
+  - admonition
+  - pymdownx.details
+  - pymdownx.superfences
+  - pymdownx.highlight:
+      anchor_linenums: true
+  - pymdownx.inlinehilite
+  - pymdownx.tabbed:
+      alternate_style: true
+  - pymdownx.snippets
+  - toc:
+      permalink: true
+  - attr_list
+  - md_in_html
+  - tables
+
+nav:
+  - Home:
+    - Overview: index.md
+    - Getting Started: getting-started.md
+    - Architecture: architecture.md
+    - Code Maps:
+      - Structure: codemaps/structure.md
+      - Internals: codemaps/architecture.md
+  - User Guide:
+    - CLI Commands: cli-commands.md
+    - Docker: docker.md
+    - Security: security.md
+  - API Reference:
+    - CLI: api/cli.md
+    - Configuration: api/config.md
+    - Installer:
+      - Orchestrator: api/installer/install.md
+      - Environment: api/installer/environment.md
+      - Dependencies: api/installer/dependencies.md
+      - GPU Setup: api/installer/gpu_setup.md
+      - Repository: api/installer/repository.md
+      - System: api/installer/system.md
+      - Nodes: api/installer/nodes.md
+      - Optimizations: api/installer/optimizations.md
+      - Finalize: api/installer/finalize.md
+      - Updater: api/installer/updater.md
+    - Utils:
+      - Logging: api/utils/logging.md
+      - Commands: api/utils/commands.md
+      - Downloads: api/utils/download.md
+      - GPU Detection: api/utils/gpu.md
+      - Packaging: api/utils/packaging.md
+      - Model Scanner: api/utils/model_scanner.md
+    - Platform:
+      - Base: api/platform/base.md
+      - Windows: api/platform/windows.md
+      - Linux: api/platform/linux.md
+      - macOS: api/platform/macos.md
+    - Downloader:
+      - Engine: api/downloader/engine.md
+  - Project:
+    - Changelog: changelog.md
+    - Contributing: contributing.md
+
+extra:
+  social:
+    - icon: fontawesome/brands/github
+      link: https://github.com/UmeAiRT

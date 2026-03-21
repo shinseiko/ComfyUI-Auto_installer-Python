@@ -1,0 +1,3 @@
+# Optimizations
+
+::: src.installer.optimizations

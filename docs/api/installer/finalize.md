@@ -1,0 +1,3 @@
+# Finalize
+
+::: src.installer.finalize
