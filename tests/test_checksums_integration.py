@@ -23,7 +23,7 @@ def load_urls_to_test() -> list[tuple[str, str, str]]:
     if not DEPENDENCIES_FILE.exists():
         return []
 
-    with open(DEPENDENCIES_FILE, "r", encoding="utf-8") as f:
+    with open(DEPENDENCIES_FILE, encoding="utf-8") as f:
         data = json.load(f)
 
     urls = []
@@ -34,7 +34,7 @@ def load_urls_to_test() -> list[tuple[str, str, str]]:
             name = wheel.get("name", "unknown")
             versions = wheel.get("versions", {})
             checksums = wheel.get("checksums", {})
-            
+
             for key, url in versions.items():
                 sha = checksums.get(key)
                 if url and sha:
@@ -47,7 +47,7 @@ def load_urls_to_test() -> list[tuple[str, str, str]]:
             sha = tool_data.get("sha256")
             if url and sha:
                 urls.append((tool_name, url, sha))
-    
+
     return urls
 
 
@@ -63,13 +63,15 @@ def test_download_checksum(name: str, url: str, expected_sha256: str) -> None:
     """
     sha256 = hashlib.sha256()
 
-    with httpx.Client(follow_redirects=True, timeout=60.0) as client:
-        with client.stream("GET", url) as response:
-            response.raise_for_status()
-            for chunk in response.iter_bytes(chunk_size=8192):
-                sha256.update(chunk)
+    with httpx.Client(follow_redirects=True, timeout=60.0) as client, client.stream("GET", url) as response:
+        response.raise_for_status()
+        for chunk in response.iter_bytes(chunk_size=8192):
+            sha256.update(chunk)
 
     actual_sha256 = sha256.hexdigest().lower()
     expected_val = expected_sha256.lower()
 
-    assert actual_sha256 == expected_val, f"Checksum mismatch for {name} ({url}). Expected {expected_val}, got {actual_sha256}"
+    assert actual_sha256 == expected_val, (
+        f"Checksum mismatch for {name} ({url}). Expected {expected_val}, "
+        f"got {actual_sha256}"
+    )

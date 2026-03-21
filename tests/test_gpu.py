@@ -130,7 +130,10 @@ class TestCheckAmdGpu:
     @patch("subprocess.run")
     def test_linux_amd_detected(self, mock_run, mock_sys) -> None:
         mock_run.return_value = subprocess.CompletedProcess(
-            args=[], returncode=0, stdout="03:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Navi 31 (rev c8)\n", stderr=""
+            args=[], returncode=0,
+            stdout="03:00.0 VGA compatible controller: Advanced Micro Devices, Inc. "
+                   "[AMD/ATI] Navi 31 (rev c8)\n",
+            stderr=""
         )
         from src.utils.gpu import check_amd_gpu
         assert check_amd_gpu() is True

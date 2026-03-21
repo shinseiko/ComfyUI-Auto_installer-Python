@@ -12,7 +12,10 @@ hard-coded default (which could silently install wrong wheels).
 from __future__ import annotations
 
 import subprocess
-from pathlib import Path
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from pathlib import Path
 
 
 def detect_venv_python_version(python_exe: Path) -> tuple[int, int]:

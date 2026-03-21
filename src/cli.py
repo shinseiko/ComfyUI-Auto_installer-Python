@@ -68,16 +68,16 @@ def install(
     # Validate enum values early
     try:
         install_type_enum = InstallType(install_type)
-    except ValueError:
+    except ValueError as e:
         raise typer.BadParameter(
             f"Invalid install type '{install_type}'. Must be one of: {', '.join(t.value for t in InstallType)}"
-        )
+        ) from e
     try:
         node_tier_enum = NodeTier(nodes)
-    except ValueError:
+    except ValueError as e:
         raise typer.BadParameter(
             f"Invalid node tier '{nodes}'. Must be one of: {', '.join(t.value for t in NodeTier)}"
-        )
+        ) from e
 
     path = _clean_path(path)
     run_install(path, install_type_enum, verbose=verbose, node_tier=node_tier_enum)

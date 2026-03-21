@@ -241,7 +241,8 @@ def display_gpu_recommendations() -> GpuInfo | None:
     else:
         if check_amd_gpu():
             log.item("AMD GPU detected.", style="success")
-            log.item("Recommendation: GGUF models are generally recommended for AMD without custom optimization.", style="cyan")
+            log.item("Recommendation: GGUF models are generally recommended for AMD "
+                     "without custom optimization.", style="cyan")
         else:
             log.item("No NVIDIA or AMD GPU detected. Please choose based on your hardware.", style="info")
 
