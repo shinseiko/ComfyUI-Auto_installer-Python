@@ -22,6 +22,8 @@ def test_platform_detection():
     p = get_platform()
     if sys.platform == "win32":
         assert p.__class__.__name__ == "WindowsPlatform"
+    elif sys.platform == "darwin":
+        assert p.__class__.__name__ == "MacOSPlatform"
     else:
         assert p.__class__.__name__ == "LinuxPlatform"
 
