@@ -43,14 +43,11 @@
 ### ~~2.1 UV as Default Package Manager~~ ✅
 > **Done:** `uv` is the sole package manager. Venv creation, installs, and editable installs all use `uv`.
 
-### 2.2 Legacy Migration Path
-- **Status:** Not yet needed — `python-rewrite` is a fresh install path, no existing pip venvs to migrate.
-- **Priority:** Medium — needed before merging to `main` if existing users upgrade.
-- **Action:** Add upgrade detection in `run_install()` to handle existing pip-based venvs.
+### ~~2.2 Legacy Migration Path~~ → Not Needed
+> **Rationale:** `python-rewrite` creates a fresh install — it does not upgrade existing PowerShell-based installs in-place. Users should do a clean install. No migration code required.
 
-### 2.3 Constraints File Support
-- **Status:** Not yet implemented.
-- **Priority:** Low — `uv` handles dependency resolution well. Feature for power users.
+### ~~2.3 Constraints File Support~~ → Removed
+> **Rationale:** `uv` handles dependency resolution natively and reliably. No user has ever requested this. Removing to reduce scope.
 
 ---
 
@@ -61,8 +58,8 @@
 ### ~~3.1~~ ✅ Direct wheel install implemented
 ### ~~3.2~~ ✅ VS Build Tools optional — only needed for insightface source build
 ### ~~3.3~~ ✅ Compiler toolchain detection via vswhere
-### 3.4 Track astral-sh Pyx
-- **Status:** Monitoring. Not actionable until Pyx ships.
+### ~~3.4 Track astral-sh Pyx~~ → Removed
+> **Rationale:** Informational only, not actionable. Will be picked up naturally when/if Pyx ships.
 
 ---
 
@@ -71,9 +68,8 @@
 ### ~~4.1 `pynvml` vs `nvidia-ml-py` Conflict~~ ✅
 > **Done:** `pynvml` removed from `dependencies.json`.
 
-### 4.2 Deprecation Warnings Audit
-- **Status:** Pending. Need to run a full install and capture `DeprecationWarning`s.
-- **Priority:** Low — cosmetic impact only.
+### ~~4.2 Deprecation Warnings Audit~~ → Removed
+> **Rationale:** Cosmetic only, no user impact. Python rewrite uses modern APIs throughout. If warnings surface, they'll come from upstream dependencies and should be fixed there.
 
 ### ~~4.3 `custom_nodes.csv` - Dead Code~~ ✅
 > **Done:** Replaced by `custom_nodes.json` manifest with additive-only logic.
@@ -116,7 +112,7 @@
 - [x] ~~Document `repo-config.json`~~ → folded into InstallerSettings
 - [x] ~~Document listen address~~ → defaults to 127.0.0.1
 - [x] ~~Document UV migration~~ → UV is default, no migration needed
-- [ ] Document compiler toolchain options (for insightface source build)
+- [x] ~~Document compiler toolchain options~~ → insightface removed from custom wheels, built from source via uv automatically
 - [x] Add security policy (`SECURITY.md`)
 - [x] ~~Document junction architecture~~ → in CONTRIBUTING.md
 - [x] ~~CONTRIBUTING.md created~~
@@ -134,22 +130,29 @@
 - [x] Python version detection tests (`test_python_info.py`)
 - [x] Integration test: full install in CI (Windows VM)
 - [x] Validate all checksums in CI (download + verify)
+- [x] Docker build & smoke test in CI (ubuntu-latest)
 - ~~[ ] Pester test suite~~ → Removed — PowerShell scripts eliminated
 
 ---
 
 ## 10. Future Features
 
-### 10.1 Container Support
-- **Priority:** Low — primary target is desktop users.
+### ~~10.1 Container Support~~ ✅
+> **Done:** Full Docker support with lightweight image (~5 GB), `--skip-nodes` for build-time, runtime entrypoint for custom nodes, volumes on host drive, CI smoke test.
 - [x] Dockerfile + docker-compose.yml
 - [x] NVIDIA Container Toolkit support
 - [x] Volume mapping for models/outputs
+- [x] `--skip-nodes` flag for lightweight builds
+- [x] `.dockerignore` for fast context transfer
+- [x] Linux wheel compatibility (skip win_amd64 wheels)
+- [x] Docker CI smoke test in GitHub Actions
 
-### 10.2 CI/CD Pipeline
+### ~~10.2 CI/CD Pipeline~~ ✅
+> **Done:** Full CI matrix with lint, security audit, tests, coverage, Windows E2E, Docker smoke test.
 - [x] CI matrix: Ubuntu + Windows × Python 3.11/3.12/3.13
 - [x] Coverage threshold enforcement (50%)
 - [x] Automated testing on fresh Windows VMs (full install smoke test)
+- [x] Docker build & smoke test (ubuntu-latest)
 
 ### ~~10.3 Release Signing~~ → Deferred
 > Not applicable — no releases published. Installation via git clone / one-liner.
@@ -157,14 +160,14 @@
 ### ~~10.4 macOS Support~~ ✅
 > **Done:** `MacOSPlatform` implemented. Native MPS/CPU handled automatically without CUDA contamination. Badge added to README. Tests added.
 
-### 10.5 `--dry-run` Mode
-- **Priority:** Low — deferred for later.
+### ~~10.5 `--dry-run` Mode~~ → Removed
+> **Rationale:** No user demand. The `--yes` flag + `--verbose` provides sufficient visibility into what the installer does. Removing to reduce scope.
 
 ---
 
-## Priority Order (Updated)
+## Priority Order (Updated 2026-03-21)
 
-1. **Integration test in CI** — full install on Windows VM (§9) (✅ Done)
-2. **Container support** — for advanced users (§10.1) (✅ Done)
-3. **Constraints file** — power user feature (§2.3)
-4. **Deprecation audit** — cosmetic (§4.2)
+All planned items are now **completed or intentionally removed**.
+
+Remaining open item:
+1. **§1.8 Pickle/Tensor Model Scanner** — monitor only, no action needed until upstream scanner libs mature
