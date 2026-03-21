@@ -90,7 +90,11 @@ def install(
         ) from e
 
     path = _clean_path(path)
-    run_install(path, install_type_enum, verbose=verbose, node_tier=node_tier_enum, cuda_version=cuda_version, skip_nodes=skip_nodes)
+    run_install(
+        path, install_type_enum,
+        verbose=verbose, node_tier=node_tier_enum,
+        cuda_version=cuda_version, skip_nodes=skip_nodes,
+    )
 
 
 @app.command()

@@ -223,7 +223,10 @@ def run_install(
         supported = deps.pip_packages.supported_cuda_tags
 
         if cuda_tag and cuda_tag in supported:
-            log.sub(f"NVIDIA CUDA {cuda_version_detected[0]}.{cuda_version_detected[1]} detected → using {cuda_tag}", style="success")
+            log.sub(
+                f"NVIDIA CUDA {cuda_version_detected[0]}.{cuda_version_detected[1]}"
+                f" detected → using {cuda_tag}", style="success",
+            )
         elif cuda_version_detected:  # Has NVIDIA, but toolkit unsupported
             log.warning(
                 f"NVIDIA CUDA {cuda_version_detected[0]}.{cuda_version_detected[1]} detected (tag: {cuda_tag}) "
