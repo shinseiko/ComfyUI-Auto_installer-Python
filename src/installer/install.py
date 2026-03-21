@@ -205,12 +205,12 @@ def run_install(
     log.step("External Folders Architecture")
     setup_junction_architecture(install_path, comfy_path, log)
 
-    # ── Step 6b: CUDA Version Detection ────────────────────────────
-    from src.utils.gpu import cuda_tag_from_version, detect_cuda_version
+    # ── Step 6b: GPU Detection & Selection ────────────────────────────
+    from src.utils.gpu import check_amd_gpu, cuda_tag_from_version, detect_cuda_version
     from src.utils.prompts import confirm
 
     if platform.name == "macos":
-        log.sub("macOS detected — skipping NVIDIA/CUDA detection (using MPS).", style="info")
+        log.sub("macOS detected — skipping GPU detection (using MPS).", style="info")
         cuda_tag = None
     else:
         cuda_version = detect_cuda_version()
@@ -218,29 +218,28 @@ def run_install(
         supported = deps.pip_packages.supported_cuda_tags
 
         if cuda_tag and cuda_tag in supported:
-            log.sub(f"CUDA {cuda_version[0]}.{cuda_version[1]} detected → using {cuda_tag}", style="success")
-        elif cuda_tag and cuda_tag not in supported:
+            log.sub(f"NVIDIA CUDA {cuda_version[0]}.{cuda_version[1]} detected → using {cuda_tag}", style="success")
+        elif cuda_version:  # Has NVIDIA, but toolkit unsupported
             log.warning(
-                f"CUDA {cuda_version[0]}.{cuda_version[1]} detected (tag: {cuda_tag}) "
-                f"but not in supported list: {', '.join(supported)}.",
+                f"NVIDIA CUDA {cuda_version[0]}.{cuda_version[1]} detected (tag: {cuda_tag}) "
+                f"but not in supported list: {', '.join(supported)}. (Falling back to cu130)",
                 level=1,
             )
-            cuda_tag = supported[0] if supported else "cu130"
-            log.sub(f"Falling back to {cuda_tag}.", style="warning")
-        elif cuda_version and not cuda_tag:
-            log.warning(
-                f"CUDA {cuda_version[0]}.{cuda_version[1]} is too old. "
-                f"Supported: {', '.join(supported)}.",
-                level=1,
-            )
-            if not confirm("Continue anyway with the latest CUDA config?", default=False):
-                raise InstallerFatalError("CUDA version incompatible. Aborting.")
-            cuda_tag = supported[0] if supported else "cu130"
+            cuda_tag = "cu130"
+        elif check_amd_gpu():
+            # AMD GPU logic
+            log.sub("AMD GPU detected.", style="success")
+            if platform.name == "linux":
+                cuda_tag = "rocm71"
+                log.sub(f"Using Linux AMD configuration: {cuda_tag}", style="cyan")
+            else:
+                cuda_tag = "directml"
+                log.sub(f"Using Windows AMD configuration: {cuda_tag}", style="cyan")
         else:
-            log.warning("No NVIDIA GPU / CUDA detected.", level=1)
-            if not confirm("Continue anyway? (PyTorch will install without GPU support)", default=False):
-                raise InstallerFatalError("No CUDA detected. Aborting.")
-            cuda_tag = supported[0] if supported else "cu130"
+            log.warning("No NVIDIA or AMD GPU detected.", level=1)
+            if not confirm("Continue anyway? (PyTorch will install CPU-only without GPU support)", default=False):
+                raise InstallerFatalError("No physical GPU detected. Aborting.")
+            cuda_tag = "cu130"  # Default generic fallback even for CPU, index-url will mostly resolve CPU or default cu130 package
 
     # ── Step 7: Core Dependencies ─────────────────────────────────
     log.step("Core Dependencies")
@@ -263,7 +262,7 @@ def run_install(
     log.step("Finalization")
     install_cli_in_environment(python_exe, log)
     install_comfy_settings(install_path, log, source_dir=source_dir)
-    create_launchers(install_path, log)
+    create_launchers(install_path, log, cuda_tag=cuda_tag)
 
     # ── Step 12: Model Downloads ──────────────────────────────────
     log.step("Model Downloads")

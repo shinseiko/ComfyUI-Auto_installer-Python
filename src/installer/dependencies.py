@@ -84,6 +84,8 @@ def install_python_packages(
     python_exe: Path,
     deps: DependenciesConfig,
     log: InstallerLogger,
+    *,
+    cuda_tag: str | None = "cu130",
 ) -> None:
     """Install additional standard packages listed in *deps*.
 
@@ -91,18 +93,21 @@ def install_python_packages(
         python_exe: Path to the venv Python executable.
         deps: Parsed ``dependencies.json``.
         log: Installer logger for user-facing messages.
+        cuda_tag: GPU configuration tag to conditionally filter packages.
     """
 
     if deps.pip_packages.standard:
         pkgs = deps.pip_packages.standard.copy()
 
-        # Filter out CUDA-specific logic if no CUDA tag (macOS)
-        from src.platform.base import get_platform
-        if get_platform().name == "macos":
-            log.info("Filtering out CUDA-only standard packages for macOS.")
+        # Filter out CUDA-specific logic if not using NVIDIA (macOS or AMD)
+        if cuda_tag is None or not cuda_tag.startswith("cu"):
+            log.info("Filtering out CUDA-only standard packages (non-NVIDIA environment).")
             pkgs = [p for p in pkgs if not p.startswith("cupy-cuda")]
             if "onnxruntime-gpu" in pkgs:
-                pkgs[pkgs.index("onnxruntime-gpu")] = "onnxruntime"
+                if cuda_tag == "directml":
+                    pkgs[pkgs.index("onnxruntime-gpu")] = "onnxruntime-directml"
+                else:
+                    pkgs[pkgs.index("onnxruntime-gpu")] = "onnxruntime"
 
         log.item(f"Installing {len(pkgs)} standard packages...")
         uv_install(python_exe, pkgs)
@@ -114,7 +119,7 @@ def install_wheels(
     deps: DependenciesConfig,
     log: InstallerLogger,
     *,
-    cuda_tag: str = "cu130",
+    cuda_tag: str | None = "cu130",
 ) -> None:
     """Download and install pre-built ``.whl`` packages.
 
@@ -141,6 +146,10 @@ def install_wheels(
     scripts_dir = install_path / "scripts"
 
     for wheel in deps.pip_packages.wheels:
+        if wheel.name == "nunchaku" and (cuda_tag is None or not cuda_tag.startswith("cu")):
+            log.info("Skipping nunchaku wheel (NVIDIA GPU required).", level=2)
+            continue
+
         resolved = wheel.resolve(py_version, cuda_tag=cuda_tag)
         if resolved is None:
             log.warning(

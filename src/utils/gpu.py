@@ -97,6 +97,49 @@ def detect_nvidia_gpu() -> bool:
         return False
 
 
+def check_amd_gpu() -> bool:
+    """
+    Check for the presence of an AMD GPU using OS-native commands.
+
+    Returns:
+        True if an AMD GPU is detected, False otherwise.
+    """
+    import platform
+
+    log = get_logger()
+    log.item("Checking for AMD GPU...")
+
+    if platform.system() == "Windows":
+        try:
+            result = subprocess.run(
+                ["powershell", "-NoProfile", "-Command", "(Get-CimInstance Win32_VideoController).Name"],
+                capture_output=True, text=True, check=True, timeout=10
+            )
+            lines = [line.strip() for line in result.stdout.splitlines() if line.strip()]
+            for line in lines:
+                if "AMD" in line.upper() or "RADEON" in line.upper():
+                    log.sub(f"AMD GPU detected: {line}", style="success")
+                    return True
+            return False
+        except Exception:
+            return False
+
+    elif platform.system() == "Linux":
+        try:
+            result = subprocess.run(
+                ["lspci"],
+                capture_output=True, text=True, check=True, timeout=10
+            )
+            is_amd = "Advanced Micro Devices" in result.stdout or "AMD" in result.stdout
+            if is_amd:
+                log.sub("AMD GPU detected.", style="success")
+            return is_amd
+        except Exception:
+            return False
+
+    return False
+
+
 def get_gpu_vram_info() -> GpuInfo | None:
     """
     Query NVIDIA GPU name and total VRAM.
@@ -196,7 +239,11 @@ def display_gpu_recommendations() -> GpuInfo | None:
         rec = recommend_model_quality(gpu.vram_gib)
         log.item(f"Recommendation: {rec}", style="cyan")
     else:
-        log.item("No NVIDIA GPU detected. Please choose based on your hardware.", style="info")
+        if check_amd_gpu():
+            log.item("AMD GPU detected.", style="success")
+            log.item("Recommendation: GGUF models are generally recommended for AMD without custom optimization.", style="cyan")
+        else:
+            log.item("No NVIDIA or AMD GPU detected. Please choose based on your hardware.", style="info")
 
     log.log("─" * 70, level=-2)
     return gpu

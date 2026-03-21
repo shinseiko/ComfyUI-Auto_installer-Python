@@ -88,6 +88,28 @@ class TestInstallPythonPackages:
             install_python_packages(python_exe, deps, log)
             mock_uv.assert_not_called()
 
+    def test_filters_cuda_packages_for_rocm(self, tmp_path: Path) -> None:
+        """Should remove cupy-cuda and convert onnxruntime-gpu for ROCm."""
+        log = MagicMock()
+        python_exe = tmp_path / "python"
+        deps = MagicMock()
+        deps.pip_packages.standard = ["numpy", "cupy-cuda13x", "onnxruntime-gpu"]
+
+        with patch("src.installer.dependencies.uv_install") as mock_uv:
+            install_python_packages(python_exe, deps, log, cuda_tag="rocm71")
+            mock_uv.assert_called_once_with(python_exe, ["numpy", "onnxruntime"])
+
+    def test_filters_cuda_packages_for_directml(self, tmp_path: Path) -> None:
+        """Should remove cupy-cuda and use onnxruntime-directml for Windows AMD."""
+        log = MagicMock()
+        python_exe = tmp_path / "python"
+        deps = MagicMock()
+        deps.pip_packages.standard = ["numpy", "cupy-cuda12x", "onnxruntime-gpu"]
+
+        with patch("src.installer.dependencies.uv_install") as mock_uv:
+            install_python_packages(python_exe, deps, log, cuda_tag="directml")
+            mock_uv.assert_called_once_with(python_exe, ["numpy", "onnxruntime-directml"])
+
 
 class TestInstallWheels:
     """Tests for install_wheels."""

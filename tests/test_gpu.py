@@ -96,3 +96,50 @@ class TestGpuInfo:
             raise AssertionError("Should have raised FrozenInstanceError")
         except AttributeError:
             pass
+
+
+class TestCheckAmdGpu:
+    """Tests for AMD GPU native detection."""
+
+    @patch("platform.system", return_value="Windows")
+    @patch("subprocess.run")
+    def test_windows_amd_detected(self, mock_run, mock_sys) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="AMD Radeon RX 7900 XTX\n", stderr=""
+        )
+        from src.utils.gpu import check_amd_gpu
+        assert check_amd_gpu() is True
+
+    @patch("platform.system", return_value="Windows")
+    @patch("subprocess.run")
+    def test_windows_no_amd(self, mock_run, mock_sys) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="Intel UHD Graphics\n", stderr=""
+        )
+        from src.utils.gpu import check_amd_gpu
+        assert check_amd_gpu() is False
+
+    @patch("platform.system", return_value="Windows")
+    @patch("subprocess.run")
+    def test_windows_exception(self, mock_run, mock_sys) -> None:
+        mock_run.side_effect = Exception("Crash")
+        from src.utils.gpu import check_amd_gpu
+        assert check_amd_gpu() is False
+
+    @patch("platform.system", return_value="Linux")
+    @patch("subprocess.run")
+    def test_linux_amd_detected(self, mock_run, mock_sys) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="03:00.0 VGA compatible controller: Advanced Micro Devices, Inc. [AMD/ATI] Navi 31 (rev c8)\n", stderr=""
+        )
+        from src.utils.gpu import check_amd_gpu
+        assert check_amd_gpu() is True
+
+    @patch("platform.system", return_value="Linux")
+    @patch("subprocess.run")
+    def test_linux_no_amd(self, mock_run, mock_sys) -> None:
+        mock_run.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="01:00.0 VGA compatible controller: NVIDIA Corporation\n", stderr=""
+        )
+        from src.utils.gpu import check_amd_gpu
+        assert check_amd_gpu() is False

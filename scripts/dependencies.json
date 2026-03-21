@@ -32,6 +32,14 @@
       "cu128": {
         "packages": "torch==2.10.0+cu128 torchvision torchaudio xformers",
         "index_url": "https://download.pytorch.org/whl/cu128"
+      },
+      "rocm71": {
+        "packages": "torch==2.10.0+rocm7.1 torchvision torchaudio",
+        "index_url": "https://download.pytorch.org/whl/rocm7.1"
+      },
+      "directml": {
+        "packages": "torch torchvision torchaudio torch-directml",
+        "index_url": ""
       }
     },
     "comfyui_requirements": "requirements.txt",

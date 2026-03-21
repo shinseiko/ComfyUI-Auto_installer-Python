@@ -91,6 +91,8 @@ def install_comfy_settings(
 def create_launchers(
     install_path: Path,
     log: InstallerLogger,
+    *,
+    cuda_tag: str | None = None,
 ) -> None:
     """Generate cross-platform launcher and tool scripts.
 
@@ -107,16 +109,20 @@ def create_launchers(
 
     On Windows, creates ``.bat`` files; on Linux/macOS ``.sh`` files
     with the executable bit set.
+    Appends ``--directml`` to ComfyUI launch arguments if running on Windows AMD.
 
     Args:
         install_path: Root installation directory.
         log: Installer logger for user-facing messages.
+        cuda_tag: The active GPU tag (used to detect 'directml').
     """
     log.item("Creating launcher scripts...")
 
     is_windows = sys.platform == "win32"
 
     perf_args = "--use-sage-attention --auto-launch"
+    if cuda_tag == "directml":
+        perf_args = f"--directml {perf_args}"
     lowvram_args = f"{perf_args} --disable-smart-memory --lowvram --fp8_e4m3fn-text-enc"
 
     launchers: list[tuple[str, str, str]] = [
