@@ -7,7 +7,7 @@
 
 ## Project Overview
 
-Cross-platform Python CLI installer for ComfyUI. Automates: Python environment setup (venv/conda), ComfyUI cloning, custom node installation, GPU optimization (Triton/SageAttention), and model downloads. Key characteristics: **junction-based architecture** keeps user data separate from the ComfyUI git repo for clean updates, and **uv-based bootstrap** requires zero system prerequisites (no Python, pip, or conda needed).
+Cross-platform Python CLI installer for ComfyUI. Automates: Python environment setup (venv/conda), ComfyUI cloning, custom node installation, multi-GPU optimization (CUDA, ROCm, DirectML, Apple Silicon), and model downloads. Key characteristics: **junction-based architecture** keeps user data separate from the ComfyUI git repo for clean updates, and **uv-based bootstrap** requires zero system prerequisites (no Python, pip, or conda needed).
 
 ## Ecosystem (Sibling Projects on `Y:\`)
 
@@ -140,11 +140,19 @@ All dependencies and URLs are in `scripts/dependencies.json`, validated by Pydan
 ```python
 # CORRECT - Add to dependencies.json, define in Pydantic model
 deps = load_dependencies(Path("scripts/dependencies.json"))
-torch_url = deps.pip_packages.torch.index_url
+torch_cfg = deps.pip_packages.get_torch(cuda_tag="cu130") # cu130, rocm71, directml
+torch_url = torch_cfg.index_url
 
-# WRONG - Hardcode URLs in Python code
+# WRONG - Hardcode URLs or assume NVIDIA-only in Python code
 torch_url = "https://download.pytorch.org/whl/cu130"
 ```
+
+### Multi-GPU Awareness
+
+The installer supports **NVIDIA** (`cu130`/`cu128`), **AMD** (`rocm71` on Linux, `directml` on Windows), and **Apple Silicon**.
+
+- **Detection**: Use `src.utils.gpu` (`get_gpu_vram_info`, `detect_cuda_version`, `check_amd_gpu`).
+- **Filtering**: Do not blindly install `cupy-cuda13x` or CUDA-only wheels (e.g., `nunchaku`) without checking `cuda_tag`. Check against `cuda_tag is not None and cuda_tag.startswith("cu")`.
 
 ## File Structure
 

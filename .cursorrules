@@ -12,9 +12,10 @@ You are working on the **ComfyUI Auto-Installer**, a cross-platform Python CLI.
 2. **Junctions**: Never put user data in `ComfyUI/` directly. Use external folders + junctions.
 3. **Logging**: Use `InstallerLogger` levels correctly. `log.info()` is hidden by default.
 4. **Config**: All URLs and packages go in `scripts/dependencies.json`, not hardcoded.
-5. **Steps**: Update `total_steps` when adding new `log.step()` calls.
-6. **Nodes**: Additive manifest only (`custom_nodes.json`). Never remove user nodes.
-7. **Tests**: Run `pytest tests/ -q` before committing.
+5. **Hardware**: Support Apple Silicon, AMD (ROCm/DirectML), and NVIDIA (CUDA 13.0/12.8). Avoid `nvidia-smi` assumptions outside `get_gpu_vram_info`.
+6. **Steps**: Update `total_steps` when adding new `log.step()` calls.
+7. **Nodes**: Additive manifest only (`custom_nodes.json`). Never remove user nodes.
+8. **Tests**: Run `pytest tests/ -q` before committing.
 
 ## Key Files
 - `src/cli.py`: CLI entry point.
