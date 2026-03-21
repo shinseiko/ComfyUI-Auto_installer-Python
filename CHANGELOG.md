@@ -9,6 +9,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
+- **Universal Hardware Support** — Auto-detects and configs PyTorch for NVIDIA (CUDA 13.0/12.8), AMD (ROCm 7.1/DirectML), and Apple Silicon (MPS).
 - **Full Python CLI** (`comfyui-installer`) replacing all PowerShell scripts — commands: `install`, `update`, `download-models`, `info`, `version`.
 - **Cross-platform support** — Windows (.bat), Linux/macOS (.sh) launchers and installer scripts.
 - **Pydantic configuration** — typed, validated config models for `dependencies.json` and user settings.

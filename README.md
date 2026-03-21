@@ -2,7 +2,7 @@
 
 ![Version](https://img.shields.io/badge/Version-5.0.0--alpha.1-orange.svg)
 ![Python](https://img.shields.io/badge/Python-3.11%20|%203.12%20|%203.13-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux-lightgrey.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS-lightgrey.svg)
 ![License](https://img.shields.io/badge/License-MIT-green.svg)
 ![Tests](https://img.shields.io/badge/Tests-215%2B%20passed-brightgreen.svg)
 
@@ -13,6 +13,7 @@ Cross-platform Python CLI to fully automate the installation, update, and config
 - **One-Click Install** — Double-click `Install.bat` (Windows) or run `Install.sh` (Linux/macOS)
 - **Isolated Core** — The installer runs in its own dedicated, safe virtual environment (`.installer_venv`).
 - **Smart Environment** — Auto-detects system, creates `uv` venv (default) or local `conda` prefix for ComfyUI.
+- **Universal Hardware** — Native support for NVIDIA (CUDA 12.8/13.0), AMD (ROCm 7.1/DirectML), and Apple Silicon (MPS).
 - **GPU Optimizations** — Installs Triton, SageAttention, and xformers with version compatibility
 - **34 Curated Custom Nodes** — Additive manifest system — never removes user-installed nodes
 - **Model Catalog v3** — 7 model families (FLUX, Z-IMAGE, WAN 2.1, WAN 2.2, HiDream, QWEN, LTX-2) with VRAM-based recommendations and SHA-256 integrity
@@ -25,7 +26,7 @@ Cross-platform Python CLI to fully automate the installation, update, and config
 ## 📋 Prerequisites
 
 - **Git**
-- **NVIDIA GPU** with CUDA 12.x+ drivers
+- **GPU:** NVIDIA (CUDA 12.x+), AMD (Radeon RX 6000+), or Apple Silicon (M1+)
 - Internet connection
 
 > **Note:** Python 3.13 is auto-installed via `uv` if not present. No manual Python setup required.
