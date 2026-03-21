@@ -7,8 +7,8 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-from src.installer.repository import EXTERNAL_FOLDERS, clone_comfyui, setup_git_config
 from src.enums import InstallerFatalError
+from src.installer.repository import EXTERNAL_FOLDERS, clone_comfyui, setup_git_config
 
 if TYPE_CHECKING:
     from pathlib import Path

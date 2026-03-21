@@ -2,16 +2,12 @@
 
 from __future__ import annotations
 
-from typing import TYPE_CHECKING
 from unittest.mock import MagicMock, patch
 
 import pytest
 
 from src.enums import InstallerFatalError
 from src.installer.gpu_setup import detect_and_select_gpu
-
-if TYPE_CHECKING:
-    pass
 
 
 def _make_deps(supported_tags: list[str] | None = None) -> MagicMock:
