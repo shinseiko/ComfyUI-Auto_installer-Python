@@ -132,8 +132,8 @@
 - [x] SHA-256 config tests (`test_config.py`)
 - [x] Enum tests (`test_enums.py`)
 - [x] Python version detection tests (`test_python_info.py`)
-- [ ] Integration test: full install in CI (Windows VM)
-- [ ] Validate all checksums in CI (download + verify)
+- [x] Integration test: full install in CI (Windows VM)
+- [x] Validate all checksums in CI (download + verify)
 - ~~[ ] Pester test suite~~ → Removed — PowerShell scripts eliminated
 
 ---
@@ -149,7 +149,7 @@
 ### 10.2 CI/CD Pipeline
 - [x] CI matrix: Ubuntu + Windows × Python 3.11/3.12/3.13
 - [x] Coverage threshold enforcement (50%)
-- [ ] Automated testing on fresh Windows VMs (full install smoke test)
+- [x] Automated testing on fresh Windows VMs (full install smoke test)
 
 ### ~~10.3 Release Signing~~ → Deferred
 > Not applicable — no releases published. Installation via git clone / one-liner.
@@ -164,7 +164,7 @@
 
 ## Priority Order (Updated)
 
-1. **Integration test in CI** — full install on Windows VM (§9)
+1. **Integration test in CI** — full install on Windows VM (§9) (✅ Done)
 2. **Container support** — for advanced users (§10.1)
 3. **Constraints file** — power user feature (§2.3)
 4. **Deprecation audit** — cosmetic (§4.2)
