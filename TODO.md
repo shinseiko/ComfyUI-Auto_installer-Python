@@ -28,10 +28,8 @@
 ### ~~1.7 `repo-config.json`~~ ✅
 > **Done:** Folded into `InstallerSettings` (`gh_user`, `gh_reponame`, `gh_branch`). Old file deprecated.
 
-### 1.8 Pickle/Tensor Model Scanner
-- **Status:** Not yet implemented.
-- **Priority:** Low — `.safetensors` is safe by design, only `.ckpt`/`.pt` files are risky. The model catalog only distributes `.safetensors`.
-- **Action:** Monitor for upstream scanner libs. Consider adding a warning if users manually download `.ckpt` files.
+### ~~1.8 Pickle/Tensor Model Scanner~~ ✅
+> **Done:** `picklescan` dependency added. Scanner utility in `src/utils/model_scanner.py` detects malicious pickle code in `.ckpt`/`.pt`/`.pth` files. CLI command `scan-models` with Rich table output. Non-blocking warning integrated into update flow (step 5/5). 17 unit tests.
 
 ### ~~1.9 Admin Privilege Audit~~ ✅
 > **Done:** Python rewrite requires zero admin elevation. Long paths enabled via registry user-level, VS Build Tools detected via `vswhere`.
@@ -167,7 +165,4 @@
 
 ## Priority Order (Updated 2026-03-21)
 
-All planned items are now **completed or intentionally removed**.
-
-Remaining open item:
-1. **§1.8 Pickle/Tensor Model Scanner** — monitor only, no action needed until upstream scanner libs mature
+🎉 **All planned items are now completed or intentionally removed.** No open items remain.

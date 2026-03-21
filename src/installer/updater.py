@@ -125,7 +125,7 @@ def run_update(install_path: Path, *, verbose: bool = False) -> None:
     """
     log = setup_logger(
         log_file=install_path / "logs" / "update_log.txt",
-        total_steps=4,
+        total_steps=5,
         verbose=verbose,
     )
     log.banner("UmeAiRT", "ComfyUI — Updater", __version__)
@@ -140,6 +140,9 @@ def run_update(install_path: Path, *, verbose: bool = False) -> None:
     update_comfyui_core(comfy_path, log)
     update_custom_nodes(python_exe, comfy_path, install_path, log)
     update_dependencies(python_exe, comfy_path, install_path, log)
+
+    # Model security scan (non-blocking)
+    _scan_models_warning(install_path, log)
 
     log.step("Update Complete!")
     log.success("All components have been updated.", level=1)
@@ -224,3 +227,43 @@ def _detect_python(scripts_dir: Path, log: InstallerLogger) -> Path:
     log.error("Could not determine venv Python. Is this a valid installation?")
     log.item("Expected 'install_type' file in scripts/ directory.")
     raise SystemExit(1)
+
+
+def _scan_models_warning(install_path: Path, log: InstallerLogger) -> None:
+    """Run a lightweight model security scan and warn about unsafe files.
+
+    Non-blocking — only prints a warning, never halts the update.
+    """
+    log.step("Model Security Scan")
+
+    models_dir = install_path / "models"
+    if not models_dir.exists():
+        log.sub("No models directory found. Skipping.", style="dim")
+        return
+
+    try:
+        from src.utils.model_scanner import scan_models_directory
+
+        summary = scan_models_directory(models_dir)
+
+        if summary.total_scanned == 0:
+            log.sub("No pickle-based model files found. All safe! ✅", style="success")
+            return
+
+        if summary.unsafe_count > 0:
+            log.warning(
+                f"{summary.unsafe_count} potentially unsafe model file(s) detected!",
+                level=1,
+            )
+            log.sub(
+                "Run 'comfyui-installer scan-models' for details.",
+                style="cyan",
+            )
+        else:
+            log.sub(
+                f"Scanned {summary.total_scanned} pickle-based model(s) — all clean. ✅",
+                style="success",
+            )
+    except Exception:  # noqa: BLE001
+        log.sub("Scanner unavailable. Install picklescan for model scanning.", style="dim")
+

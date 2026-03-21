@@ -245,6 +245,109 @@ def info() -> None:
     console.print()
 
 
+@app.command(name="scan-models")
+def scan_models(
+    path: Path = typer.Option(
+        ".",
+        "--path", "-p",
+        help="ComfyUI install path containing the 'models' directory.",
+    ),
+    verbose: bool = typer.Option(
+        False,
+        "--verbose", "-v",
+        help="Show all scanned files, not just unsafe ones.",
+    ),
+) -> None:
+    """Scan model files for malicious pickle code."""
+    from src.utils.model_scanner import (
+        scan_models_directory,
+    )
+
+    path = _clean_path(path)
+    models_dir = path / "models"
+
+    if not models_dir.exists():
+        console.print(f"[red]Models directory not found: {models_dir}[/]")
+        raise typer.Exit(1)
+
+    console.print()
+    log = setup_logger()
+    log.banner("UmeAiRT", "ComfyUI — Model Security Scanner", __version__)
+
+    console.print(f"[dim]Scanning: {models_dir}[/]\n")
+    summary = scan_models_directory(models_dir)
+
+    if summary.total_scanned == 0:
+        console.print(
+            "[green]✅ No pickle-based model files found. "
+            "All your models use safe formats![/]"
+        )
+        if summary.skipped_safe_format > 0:
+            console.print(
+                f"[dim]   ({summary.skipped_safe_format} safetensors/"
+                "gguf/onnx files skipped — inherently safe)[/]"
+            )
+        console.print()
+        return
+
+    # Build results table
+    table = Table(
+        title="Model Security Scan Results",
+        show_header=True,
+        header_style="bold cyan",
+    )
+    table.add_column("Status", width=6, justify="center")
+    table.add_column("File", style="dim")
+    table.add_column("Issues", justify="right")
+
+    for result in summary.results:
+        if not verbose and result.is_safe:
+            continue
+
+        rel_path = result.path.relative_to(models_dir)
+        if result.scan_error:
+            status = "[yellow]⚠️[/]"
+            issues = f"[yellow]{result.error_message or 'scan error'}[/]"
+        elif result.is_safe:
+            status = "[green]✅[/]"
+            issues = "0"
+        else:
+            status = "[red]❌[/]"
+            issues = f"[red]{result.issues_count} suspicious[/]"
+
+        table.add_row(status, str(rel_path), issues)
+
+    console.print(table)
+    console.print()
+
+    # Summary line
+    if summary.unsafe_count > 0:
+        console.print(
+            f"[red bold]⚠️  {summary.unsafe_count} potentially unsafe "
+            f"file(s) detected![/]"
+        )
+        console.print(
+            "[dim]   These files contain pickle code that could "
+            "execute malicious operations.[/]"
+        )
+        console.print(
+            "[dim]   Consider converting to .safetensors format "
+            "or verifying the source.[/]"
+        )
+    else:
+        console.print(
+            f"[green]✅ All {summary.safe_count} pickle-based model(s) "
+            "scanned clean.[/]"
+        )
+
+    if summary.skipped_safe_format > 0:
+        console.print(
+            f"[dim]   ({summary.skipped_safe_format} safetensors/"
+            "gguf/onnx files skipped — inherently safe)[/]"
+        )
+    console.print()
+
+
 @app.command()
 def version() -> None:
     """Show the installer version."""
