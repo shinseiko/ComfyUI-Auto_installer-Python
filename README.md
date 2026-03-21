@@ -12,8 +12,11 @@ Cross-platform Python CLI to fully automate the installation, update, and config
 
 - **One-Click Install** — Double-click `Install.bat` (Windows) or run `Install.sh` (Linux/macOS)
 - **Isolated Core** — The installer runs in its own dedicated, safe virtual environment (`.installer_venv`).
-- **Smart Environment** — Auto-detects system, creates `uv` venv (default) or local `conda` prefix for ComfyUI.
-- **Universal Hardware** — Native support for NVIDIA (CUDA 12.8/13.0), AMD (ROCm 7.1/DirectML), and Apple Silicon (MPS).
+- **Cross-Platform Compatibility**:
+  - **Windows**: Full support for NVIDIA (CUDA), AMD (DirectML), and CPU-only fallbacks.
+  - **Linux**: Full support for NVIDIA (CUDA), AMD (ROCm), and CPU-only fallbacks.
+  - **macOS**: Full support leveraging Apple Silicon (MPS).
+- **Flexible Installations**: Supports both `uv` Virtual Environments (`venv`) and Git-tracked `conda`/`venv` integration.
 - **GPU Optimizations** — Installs Triton, SageAttention, and xformers with version compatibility
 - **34 Curated Custom Nodes** — Additive manifest system — never removes user-installed nodes
 - **Model Catalog v3** — 7 model families (FLUX, Z-IMAGE, WAN 2.1, WAN 2.2, HiDream, QWEN, LTX-2) with VRAM-based recommendations and SHA-256 integrity

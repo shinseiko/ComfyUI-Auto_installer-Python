@@ -239,8 +239,7 @@ def run_install(
             log.warning("No NVIDIA or AMD GPU detected.", level=1)
             if not confirm("Continue anyway? (PyTorch will install CPU-only without GPU support)", default=True):
                 raise InstallerFatalError("No physical GPU detected. Aborting.")
-            # Default generic fallback even for CPU, index-url resolves CPU or defaults to cu130 package
-            cuda_tag = "cu130"
+            cuda_tag = "cpu"
 
     # ── Step 7: Core Dependencies ─────────────────────────────────
     log.step("Core Dependencies")

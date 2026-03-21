@@ -40,6 +40,10 @@
       "directml": {
         "packages": "torch torchvision torchaudio torch-directml",
         "index_url": ""
+      },
+      "cpu": {
+        "packages": "torch torchvision torchaudio",
+        "index_url": "https://download.pytorch.org/whl/cpu"
       }
     },
     "comfyui_requirements": "requirements.txt",
