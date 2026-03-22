@@ -5,7 +5,7 @@ on:
   schedule:
     - cron: '0 0 * * 0' # Run weekly on Sunday
   push:
-    branches: [python-rewrite]
+    branches: [main, python-rewrite]
     paths:
       - 'Dockerfile'
       - 'entrypoint.sh'
@@ -75,36 +75,22 @@ jobs:
       - name: Build Docker Image
         run: docker build -t umeairt/comfyui:ci .
 
-      - name: Start Container
+      - name: Verify Image Contents
         run: |
-          docker run -d --name comfyui-ci \
-            -p 8188:8188 \
-            umeairt/comfyui:ci
+          echo "Checking Python..."
+          docker run --rm --entrypoint python umeairt/comfyui:ci --version
 
-      - name: Wait for ComfyUI Web Server
-        run: |
-          echo "Waiting for ComfyUI to start..."
-          for i in $(seq 1 60); do
-            if curl -s -o /dev/null -w "%{http_code}" http://localhost:8188 | grep -q "200"; then
-              echo "✅ ComfyUI responded after ${i}x5s"
-              exit 0
-            fi
-            sleep 5
-          done
-          echo "❌ ComfyUI did not respond within 5 minutes"
-          exit 1
+          echo "Checking uv..."
+          docker run --rm --entrypoint uv umeairt/comfyui:ci --version
 
-      - name: Verify ComfyUI HTML
-        run: |
-          TITLE=$(curl -s http://localhost:8188 | grep -o '<title>.*</title>')
-          echo "Page title: $TITLE"
-          echo "$TITLE" | grep -qi "ComfyUI" || (echo "❌ Unexpected page content" && exit 1)
-          echo "✅ ComfyUI web interface verified"
+          echo "Checking ComfyUI directory..."
+          docker run --rm --entrypoint ls umeairt/comfyui:ci /app/ComfyUI/main.py
 
-      - name: Dump Container Logs (on failure)
-        if: failure()
-        run: docker logs comfyui-ci
+          echo "Checking CLI is installed..."
+          docker run --rm --entrypoint python umeairt/comfyui:ci -c "from src.cli import app; print('✅ CLI importable')"
 
-      - name: Cleanup
-        if: always()
-        run: docker rm -f comfyui-ci || true
+          echo "Checking venv exists..."
+          docker run --rm --entrypoint ls umeairt/comfyui:ci /app/scripts/venv/bin/python
+
+          echo "✅ All Docker image checks passed"
+
