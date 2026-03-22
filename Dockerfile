@@ -45,8 +45,8 @@ USER 1000
 # they are installed at runtime by the entrypoint into the mounted volumes.
 RUN python -m src.cli install --path /app --type venv --yes --cuda cu130 --skip-nodes
 
-# Give execution permission to the entrypoint
-RUN chmod +x /app/entrypoint.sh
+# Fix line endings (Git on Windows may convert LF→CRLF) and set executable
+RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
 # Expose the standard ComfyUI web port
 EXPOSE 8188
