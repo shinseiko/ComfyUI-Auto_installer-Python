@@ -391,6 +391,9 @@ def provision_scripts(install_path: Path, log: InstallerLogger) -> None:
     # Download model_manifest.json from Assets repo (HF primary, ModelScope fallback)
     _provision_bundles_manifest(dest_dir, log)
 
+    # Download tools_manifest.json for wheel checksum verification
+    _provision_tools_manifest(dest_dir, log)
+
     log.item(f"{copied} config file(s) provisioned.")
 
 
@@ -398,6 +401,11 @@ def provision_scripts(install_path: Path, log: InstallerLogger) -> None:
 _BUNDLES_MANIFEST_URLS = [
     "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/model_manifest.json",
     "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/model_manifest.json",
+]
+
+_TOOLS_MANIFEST_URLS = [
+    "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/tools_manifest.json",
+    "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/tools_manifest.json",
 ]
 
 
@@ -429,4 +437,95 @@ def _provision_bundles_manifest(dest_dir: Path, log: InstallerLogger) -> None:
             )
         else:
             log.warning("  model_manifest.json: could not be downloaded (no local copy)", level=2)
+
+
+def _provision_tools_manifest(dest_dir: Path, log: InstallerLogger) -> None:
+    """Download ``tools_manifest.json`` from the Assets repo.
+
+    Same fallback strategy as :func:`_provision_bundles_manifest`:
+    HuggingFace first, ModelScope second, offline-safe if local copy
+    exists.
+
+    Args:
+        dest_dir: Target ``scripts/`` directory.
+        log: Installer logger.
+    """
+    tools_dst = dest_dir / "tools_manifest.json"
+
+    try:
+        download_file(
+            _TOOLS_MANIFEST_URLS,
+            tools_dst,
+            force=True,
+        )
+        log.sub("  tools_manifest.json: downloaded from Assets repo", style="success")
+    except RuntimeError:
+        if tools_dst.exists():
+            log.sub(
+                "  tools_manifest.json: remote fetch failed, using existing local copy",
+                style="cyan",
+            )
+        else:
+            log.warning("  tools_manifest.json: could not be downloaded (no local copy)", level=2)
+
+
+def load_tools_manifest(install_path: Path) -> dict:
+    """Load ``tools_manifest.json`` from the install scripts directory.
+
+    Returns the parsed JSON as a dict, or an empty dict if the file
+    is not found or unparseable.
+
+    Args:
+        install_path: Root installation directory.
+
+    Returns:
+        Parsed manifest dict (or empty dict on failure).
+    """
+    import json
+
+    manifest_path = install_path / "scripts" / "tools_manifest.json"
+    if not manifest_path.exists():
+        return {}
+    try:
+        return json.loads(manifest_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return {}
+
+
+def lookup_wheel_checksum(
+    manifest: dict,
+    wheel_url: str,
+) -> str | None:
+    """Look up the SHA-256 checksum for a wheel from the tools manifest.
+
+    Searches through all entries in the ``whl`` section for a matching
+    filename.
+
+    Args:
+        manifest: Parsed ``tools_manifest.json`` dict.
+        wheel_url: Full URL of the wheel to look up.
+
+    Returns:
+        SHA-256 hex digest string, or ``None`` if not found.
+    """
+    if not manifest:
+        return None
+
+    # Extract filename from URL (e.g. "sageattention-2.2.0-cp312-cp312-win_amd64.whl")
+    filename = wheel_url.rsplit("/", 1)[-1] if "/" in wheel_url else wheel_url
+
+    whl_section = manifest.get("whl", {})
+    for _pkg_name, pkg_data in whl_section.items():
+        if not isinstance(pkg_data, dict):
+            continue
+        files = pkg_data.get("files", {})
+        for _key, file_info in files.items():
+            if not isinstance(file_info, dict):
+                continue
+            manifest_filename = file_info.get("filename", "")
+            # Compare just the basename
+            if manifest_filename.rsplit("/", 1)[-1] == filename:
+                return file_info.get("sha256")
+
+    return None
 

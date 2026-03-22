@@ -131,8 +131,9 @@ def install_wheels(
     """Download and install pre-built ``.whl`` packages.
 
     Detects the Python version from the venv and picks the matching
-    wheel for each entry.  Each wheel is downloaded to ``scripts/``,
-    installed via uv, then deleted to save disk space.
+    wheel for each entry.  Checksums are looked up from the
+    ``tools_manifest.json`` (downloaded at provision time) rather than
+    being hardcoded in ``dependencies.json``.
 
     Args:
         python_exe: Path to the venv Python executable.
@@ -148,6 +149,10 @@ def install_wheels(
     from src.utils.python_info import detect_venv_python_version
     py_version = detect_venv_python_version(python_exe)
     log.info(f"Python version detected: {py_version[0]}.{py_version[1]}")
+
+    # Load tools manifest for checksum verification
+    from src.installer.environment import load_tools_manifest, lookup_wheel_checksum
+    manifest = load_tools_manifest(install_path)
 
     log.item(f"Installing {len(deps.pip_packages.wheels)} wheel packages...")
     scripts_dir = install_path / "scripts"
@@ -165,7 +170,9 @@ def install_wheels(
             )
             continue
 
-        whl_name, whl_url, whl_checksum = resolved
+        whl_name, whl_url, _legacy_checksum = resolved
+        # Prefer manifest checksum; fall back to legacy hardcoded checksum
+        whl_checksum = lookup_wheel_checksum(manifest, whl_url) or _legacy_checksum
         wheel_path = scripts_dir / f"{whl_name}.whl"
         log.sub(f"Installing {whl_name}...")
 

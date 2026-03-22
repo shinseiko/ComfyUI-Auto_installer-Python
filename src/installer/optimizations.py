@@ -261,18 +261,21 @@ def _install_package(
 # ---------------------------------------------------------------------------
 def install_sageattention(
     python_exe: Path,
+    install_path: Path,
     deps: DependenciesConfig,
     log: InstallerLogger,
 ) -> None:
     """Install the correct SageAttention wheel based on GPU compute capability.
 
     Checks ``deps.pip_packages.sageattention_wheels`` for a wheel whose
-    compute-capability range matches the detected GPU.  Falls back to
-    PyPI ``sageattention`` with ``--no-build-isolation`` if no pre-built
-    wheel is available.
+    compute-capability range matches the detected GPU.  Checksums are
+    looked up from ``tools_manifest.json`` rather than hardcoded in
+    ``dependencies.json``.  Falls back to PyPI ``sageattention`` with
+    ``--no-build-isolation`` if no pre-built wheel is available.
 
     Args:
         python_exe: Path to the venv Python executable.
+        install_path: Root installation directory.
         deps: Parsed ``dependencies.json``.
         log: Installer logger for user-facing messages.
     """
@@ -293,6 +296,10 @@ def install_sageattention(
         return
 
     log.sub(f"GPU compute capability: {cc[0]}.{cc[1]}")
+
+    # Load tools manifest for checksum verification
+    from src.installer.environment import load_tools_manifest, lookup_wheel_checksum
+    manifest = load_tools_manifest(install_path)
 
     # Find matching wheel from config
     sa_wheels = deps.pip_packages.sageattention_wheels
@@ -318,7 +325,9 @@ def install_sageattention(
             log.info(f"{sa_whl.name}: no wheel for Python {py_version[0]}.{py_version[1]}, skipping.")
             continue
 
-        whl_name, whl_url, whl_checksum = resolved
+        whl_name, whl_url, _legacy_checksum = resolved
+        # Prefer manifest checksum; fall back to legacy hardcoded checksum
+        whl_checksum = lookup_wheel_checksum(manifest, whl_url) or _legacy_checksum
         wheel_path = python_exe.parent.parent / f"{whl_name}.whl"
         log.sub(f"Installing {sa_whl.name} from pre-built wheel...")
 
@@ -429,4 +438,4 @@ def install_optimizations(
         _install_package(pkg, python_exe, platform, torch_ver, log)
 
     # SageAttention: uses dedicated wheel-based installer
-    install_sageattention(python_exe, deps, log)
+    install_sageattention(python_exe, install_path, deps, log)
