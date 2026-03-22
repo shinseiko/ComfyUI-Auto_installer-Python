@@ -34,3 +34,7 @@ Desktop.ini
 .idea/
 
 .coverage
+
+# Local wheel build
+build-sa-wheels.bat
+wheels-out/
