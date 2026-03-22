@@ -154,12 +154,21 @@ def install_wheels(
 
     for wheel in deps.pip_packages.wheels:
         if wheel.name == "nunchaku":
-            from src.platform.base import get_platform
-            if get_platform().name != "windows":
-                log.sub("Skipping nunchaku wheel (Manifest contains Windows-only wheels).", style="cyan")
-                continue
             if cuda_tag is None or not cuda_tag.startswith("cu"):
                 log.sub("Skipping nunchaku wheel (NVIDIA GPU required).", style="cyan")
+                continue
+
+            from src.platform.base import get_platform
+            if get_platform().name != "windows":
+                # Linux/Docker: install via nunchaku-installer (auto-detects torch/python/CUDA
+                # and downloads the matching wheel from GitHub releases)
+                log.sub("Installing nunchaku via nunchaku-installer (Linux)...")
+                try:
+                    uv_install(python_exe, ["nunchaku-installer"])
+                    from src.utils.commands import run_and_log
+                    run_and_log(str(python_exe), ["-m", "nunchaku_installer", "install"], timeout=300)
+                except Exception as e:
+                    log.warning(f"Failed to install nunchaku on Linux: {e}", level=2)
                 continue
 
         resolved = wheel.resolve(py_version, cuda_tag=cuda_tag)

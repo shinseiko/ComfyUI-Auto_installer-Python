@@ -79,6 +79,7 @@
     "standard": [
       "facexlib",
       "cython",
+      "insightface",
       "onnxruntime-gpu",
       "hf_xet",
       "nvidia-ml-py",

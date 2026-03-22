@@ -111,27 +111,32 @@ def update_dependencies(
         log.item("Updating ComfyUI requirements...")
         uv_install(python_exe, requirements=req_file, upgrade=True)
 
+    # Detect CUDA tag (used by standard packages, wheels, and optional torch update)
+    from src.installer.optimizations import _get_cuda_version_from_torch
+
+    cuda_ver = _get_cuda_version_from_torch(python_exe)
+    cuda_tag: str | None = None
+    if cuda_ver:
+        try:
+            parts = cuda_ver.split(".")
+            from src.utils.gpu import cuda_tag_from_version
+            cuda_tag = cuda_tag_from_version((int(parts[0]), int(parts[1])))
+        except (ValueError, IndexError):
+            pass
+
+    if cuda_tag is None:
+        supported = deps.pip_packages.supported_cuda_tags
+        cuda_tag = supported[0] if supported else "cu130"
+
+    # Install/update standard packages (insightface, facexlib, etc.)
+    from src.installer.dependencies import install_python_packages, install_wheels
+    install_python_packages(python_exe, deps, log, cuda_tag=cuda_tag)
+
+    # Install/update wheel packages (nunchaku)
+    install_wheels(python_exe, install_path, deps, log, cuda_tag=cuda_tag)
+
     # Update torch
     if confirm("Update PyTorch? (Only if there's a new CUDA version)"):
-        # Detect CUDA tag from the currently installed torch build
-        from src.installer.optimizations import _get_cuda_version_from_torch
-
-        cuda_ver = _get_cuda_version_from_torch(python_exe)
-        cuda_tag: str | None = None
-        if cuda_ver:
-            try:
-                parts = cuda_ver.split(".")
-                from src.utils.gpu import cuda_tag_from_version
-                cuda_tag = cuda_tag_from_version((int(parts[0]), int(parts[1])))
-            except (ValueError, IndexError):
-                pass
-
-        # Fallback: use first supported tag from config
-        if cuda_tag is None:
-            supported = deps.pip_packages.supported_cuda_tags
-            cuda_tag = supported[0] if supported else "cu130"
-            log.sub(f"Could not detect CUDA from torch. Using {cuda_tag}.", style="yellow")
-
         torch_cfg = deps.pip_packages.get_torch(cuda_tag)
         if torch_cfg:
             torch_pkgs = torch_cfg.packages.split()
