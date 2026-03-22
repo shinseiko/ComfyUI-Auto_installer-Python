@@ -8,7 +8,6 @@ services:
         #   cloud    → ComfyUI + JupyterLab (for RunPod / cloud)
         VARIANT: standard
     image: ghcr.io/umeairt/comfyui:latest
-    pull_policy: always
     container_name: umeairt-comfyui
     restart: unless-stopped
     ports:
