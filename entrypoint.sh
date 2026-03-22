@@ -4,9 +4,21 @@ set -e
 # Change to the container's application mapping directory
 cd /app
 
+# ─── Node Tier Configuration ────────────────────────────────────
+# NODE_TIER controls which custom node bundle gets installed.
+# Set via docker-compose.yml environment or docker run -e NODE_TIER=...
+#
+# Available tiers (additive — each includes the previous):
+#   minimal  → ComfyUI-Manager only (bare minimum)
+#   umeairt  → + UmeAiRT Sync/Toolkit + essential creative nodes
+#   full     → + all community nodes (default)
+NODE_TIER="${NODE_TIER:-full}"
+
 echo "================================================="
 echo "   UmeAiRT Docker Environment Initializing       "
 echo "================================================="
+echo ""
+echo "  Node tier: ${NODE_TIER}"
 echo ""
 echo "Running the UmeAiRT Updater..."
 echo "This guarantees your ComfyUI core, PyTorch dependencies,"
@@ -17,7 +29,7 @@ echo ""
 
 # Run the UmeAiRT CLI update routine.
 # This reconciles the container's actual volume state with the model JSONs.
-python -m src.cli update --path /app --yes --verbose
+python -m src.cli update --path /app --yes --verbose --nodes "${NODE_TIER}"
 
 echo ""
 echo "================================================="

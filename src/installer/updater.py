@@ -47,6 +47,8 @@ def update_custom_nodes(
     comfy_path: Path,
     install_path: Path,
     log: InstallerLogger,
+    *,
+    node_tier: str = "full",
 ) -> None:
     """Update bundled custom nodes. User-installed nodes are NEVER touched.
 
@@ -79,6 +81,11 @@ def update_custom_nodes(
 
     custom_nodes_dir = comfy_path / "custom_nodes"
     manifest = load_manifest(manifest_path)
+
+    # Filter by tier so only the selected bundle is installed
+    from src.installer.nodes import filter_by_tier
+    manifest = filter_by_tier(manifest, node_tier)
+
     update_all_nodes(manifest, custom_nodes_dir, python_exe, log)
 
 
@@ -139,13 +146,14 @@ def update_dependencies(
             log.warning(f"No PyTorch config for '{cuda_tag}'. Skipping torch update.", level=1)
 
 
-def run_update(install_path: Path, *, verbose: bool = False) -> None:
+def run_update(install_path: Path, *, verbose: bool = False, node_tier: str = "full") -> None:
     """
     Run the full update process.
 
     Args:
         install_path: Root installation directory.
         verbose: Show detailed subprocess output.
+        node_tier: Custom nodes bundle tier — 'minimal', 'umeairt', or 'full'.
     """
     log = setup_logger(
         log_file=install_path / "logs" / "update_log.txt",
@@ -162,7 +170,7 @@ def run_update(install_path: Path, *, verbose: bool = False) -> None:
 
     # Run update steps
     update_comfyui_core(comfy_path, log)
-    update_custom_nodes(python_exe, comfy_path, install_path, log)
+    update_custom_nodes(python_exe, comfy_path, install_path, log, node_tier=node_tier)
     update_dependencies(python_exe, comfy_path, install_path, log)
 
     # Model security scan (non-blocking)

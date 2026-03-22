@@ -6,6 +6,14 @@ services:
     restart: unless-stopped
     ports:
       - "8188:8188"
+    environment:
+      # ── Custom Nodes Bundle ─────────────────────────────────────
+      # Controls which set of custom nodes gets installed on startup.
+      # Each tier includes all nodes from lower tiers (additive):
+      #   minimal  → ComfyUI-Manager only (bare minimum)
+      #   umeairt  → + UmeAiRT Sync/Toolkit + essential creative nodes
+      #   full     → + all community nodes (default, ~34 nodes)
+      - NODE_TIER=full
     # Run as the non-root user created in the Dockerfile (UID 1000).
     # If your host volumes are owned by a different UID, set PUID/PGID
     # in a .env file and rebuild with matching --build-arg values.

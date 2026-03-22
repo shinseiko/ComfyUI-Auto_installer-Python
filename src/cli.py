@@ -114,6 +114,11 @@ def update(
         "--yes", "-y",
         help="Non-interactive mode: accept all defaults without prompting.",
     ),
+    nodes: str = typer.Option(
+        "full",
+        "--nodes", "-n",
+        help="Custom nodes bundle: 'minimal', 'umeairt', or 'full'.",
+    ),
 ) -> None:
     """Update ComfyUI, custom nodes, and dependencies."""
     from src.installer.updater import run_update
@@ -121,8 +126,15 @@ def update(
     if yes:
         set_non_interactive()
 
+    try:
+        node_tier_enum = NodeTier(nodes)
+    except ValueError as e:
+        raise typer.BadParameter(
+            f"Invalid node tier '{nodes}'. Must be one of: {', '.join(t.value for t in NodeTier)}"
+        ) from e
+
     path = _clean_path(path)
-    run_update(path, verbose=verbose)
+    run_update(path, verbose=verbose, node_tier=node_tier_enum)
 
 
 @app.command(name="download-models")
