@@ -30,11 +30,20 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
+      options: --privileged
     strategy:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12", "3.13"]
     steps:
+      - name: Add 10GB swap (runners only have 7GB RAM)
+        run: |
+          fallocate -l 10G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          free -h
+
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
@@ -70,7 +79,7 @@ jobs:
         working-directory: /sageattention
         env:
           TORCH_CUDA_ARCH_LIST: "8.0;8.6;8.9;9.0"
-          MAX_JOBS: "2"
+          MAX_JOBS: "1"
           PATH: "/build-venv/bin:/usr/local/cuda/bin:$PATH"
         run: |
           $VENV_PYTHON -m pip wheel . --no-deps --no-build-isolation -w /wheels
@@ -110,7 +119,16 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
+      options: --privileged
     steps:
+      - name: Add 10GB swap (runners only have 7GB RAM)
+        run: |
+          fallocate -l 10G /swapfile
+          chmod 600 /swapfile
+          mkswap /swapfile
+          swapon /swapfile
+          free -h
+
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
@@ -146,7 +164,7 @@ jobs:
         working-directory: /sageattention/sageattention3_blackwell
         env:
           TORCH_CUDA_ARCH_LIST: "10.0"
-          MAX_JOBS: "2"
+          MAX_JOBS: "1"
           PATH: "/build-venv/bin:/usr/local/cuda/bin:$PATH"
         run: |
           $VENV_PYTHON -m pip wheel . --no-deps --no-build-isolation -w /wheels
