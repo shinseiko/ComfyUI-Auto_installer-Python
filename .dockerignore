@@ -1,9 +1,37 @@
+# Version control
 .git
+.gitattributes
+
+# Python caches
 .venv
 venv
-docker_data
 __pycache__
+*.pyc
+*.pyo
+*.egg-info
 .pytest_cache
 .ruff_cache
+.mypy_cache
+
+# Development / CI files
 tests
+docs
+.github
+.agents
+bootstrap
+docker_data
+
+# Logs and temp
 *.log
+*.tmp
+
+# IDE
+.vscode
+.idea
+
+# OS
+Thumbs.db
+.DS_Store
+
+# Docker (prevent recursive context)
+docker-compose.yml

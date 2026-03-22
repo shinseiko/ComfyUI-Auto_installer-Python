@@ -1,15 +1,14 @@
 # syntax=docker/dockerfile:1.4
-# ── Base image: CUDA 13.0 runtime for RTX 50X0 / 40X0 / 30X0 support ──
-# Note: cuDNN is NOT included — PyTorch bundles its own copy.
-FROM nvidia/cuda:13.0.2-runtime-ubuntu24.04
+# ── Stage 1: Builder — install everything, compile, then clean up ──
+FROM nvidia/cuda:13.0.2-runtime-ubuntu24.04 AS builder
 
-# ── Build arguments ──────────────────────────────────────────────
 # VARIANT controls the image flavor:
 #   standard (default) → ComfyUI only
 #   cloud              → ComfyUI + JupyterLab (for RunPod / cloud)
 ARG VARIANT=standard
 
-# Install system dependencies (Python 3.12 is native to Ubuntu 24.04, kept for OS tools)
+# Install system dependencies + build tools in a single layer
+# build-essential and python3.12-dev are needed for compilation only
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
     python3.12-venv \
@@ -30,25 +29,21 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -rf /var/lib/apt/lists/* \
     && rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED
 
-# Install uv as a standalone binary (matches the bootstrap approach)
-# Copy (not symlink) because /root/.local is inaccessible to non-root users
+# Install uv as a standalone binary
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && cp /root/.local/bin/uv /usr/local/bin/uv
+    && cp /root/.local/bin/uv /usr/local/bin/uv \
+    && rm -rf /root/.local/bin  # clean installer leftovers
 
-# Install Python 3.13 via uv for the ComfyUI venv (supports SageAttention 3 Blackwell)
-# System Python 3.12 stays untouched for Ubuntu's own tools.
+# Install Python 3.13 via uv for the ComfyUI venv
 RUN uv python install 3.13
 
 # Configure workspace
 WORKDIR /app
 
-# Ensure /app and /data are owned by UID 1000 (the default non-root user)
-# /data is the single persistent volume mount point for all user data.
-# Ubuntu 24.04 already ships with a user at UID/GID 1000.
+# Ensure /app and /data are owned by UID 1000
 RUN chown -R 1000:1000 /app && mkdir -p /data && chown -R 1000:1000 /data
 
-# Declare /data as a volume so Docker auto-creates one if not explicitly mounted.
-# This prevents data loss for users who forget the -v flag.
+# Declare /data as a volume
 VOLUME /data
 
 # Copy the installer repository into the container
@@ -57,8 +52,7 @@ COPY --chown=1000:1000 . /app
 # Install the installer package system-wide
 RUN uv pip install --system -e .
 
-# ── Cloud variant: install JupyterLab ────────────────────────────
-# Only installed when building with: docker build --build-arg VARIANT=cloud
+# Cloud variant: install JupyterLab
 RUN if [ "$VARIANT" = "cloud" ]; then \
       echo "Installing JupyterLab (cloud variant)..." && \
       uv pip install --system jupyterlab; \
@@ -69,14 +63,34 @@ RUN if [ "$VARIANT" = "cloud" ]; then \
 # Switch to non-root user for the build phase
 USER 1000
 
-# Pre-install ComfyUI core during the image build phase.
-# This downloads PyTorch with CUDA, installs ComfyUI requirements, and sets up the venv.
-# Custom nodes are NOT installed here (--skip-nodes) to keep the image small;
-# they are installed at runtime by the entrypoint into the mounted volumes.
+# Pre-install ComfyUI core (PyTorch, requirements, venv)
+# Custom nodes are NOT installed here (--skip-nodes) — installed at runtime.
 RUN python -m src.cli install --path /app --type venv --yes --cuda cu130 --skip-nodes
 
-# Fix line endings (Git on Windows may convert LF→CRLF) and set executable
+# ── Back to root for cleanup ──
+USER 0
+
+# Remove build-only packages and clean all caches in a single layer
+# This saves ~500 MB by removing compilers, headers, and caches
+RUN apt-get purge -y --auto-remove \
+      build-essential \
+      python3.12-dev \
+      cpp gcc g++ make \
+    && apt-get clean \
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -rf /root/.cache/uv \
+    && rm -rf /root/.cache/pip \
+    && rm -rf /home/*/.cache/uv \
+    && rm -rf /home/*/.cache/pip \
+    && rm -rf /tmp/* \
+    && find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
+    && find /app -name "*.pyc" -delete 2>/dev/null || true
+
+# Fix line endings and set executable
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
+
+# Switch back to non-root user
+USER 1000
 
 # Expose ComfyUI (8188) and JupyterLab (8888, cloud variant only)
 EXPOSE 8188 8888
