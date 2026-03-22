@@ -22,6 +22,7 @@ env:
   # PyTorch version must match the one in dependencies.json
   TORCH_VERSION: "2.10.0"
   TORCH_INDEX: "https://download.pytorch.org/whl/cu130"
+  VENV_PYTHON: "/build-venv/bin/python"
 
 jobs:
   build-sa2:
@@ -51,13 +52,13 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          /build-venv/bin/pip install \
+          uv pip install --python $VENV_PYTHON \
             torch==${{ env.TORCH_VERSION }}+cu130 \
             --index-url ${{ env.TORCH_INDEX }}
 
       - name: Install build tools
         run: |
-          /build-venv/bin/pip install setuptools wheel packaging
+          uv pip install --python $VENV_PYTHON setuptools wheel packaging
 
       - name: Clone SageAttention
         run: |
@@ -72,7 +73,7 @@ jobs:
           MAX_JOBS: "2"
           PATH: "/build-venv/bin:/usr/local/cuda/bin:$PATH"
         run: |
-          /build-venv/bin/pip wheel . --no-deps --no-build-isolation -w /wheels
+          $VENV_PYTHON -m pip wheel . --no-deps --no-build-isolation -w /wheels
 
       - name: List built wheels
         run: ls -lah /wheels/
@@ -81,8 +82,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          /build-venv/bin/pip install huggingface_hub
-          /build-venv/bin/python -c "
+          uv pip install --python $VENV_PYTHON huggingface_hub
+          $VENV_PYTHON -c "
           from huggingface_hub import HfApi
           import glob
           api = HfApi()
@@ -127,13 +128,13 @@ jobs:
 
       - name: Install PyTorch
         run: |
-          /build-venv/bin/pip install \
+          uv pip install --python $VENV_PYTHON \
             torch==${{ env.TORCH_VERSION }}+cu130 \
             --index-url ${{ env.TORCH_INDEX }}
 
       - name: Install build tools
         run: |
-          /build-venv/bin/pip install setuptools wheel packaging
+          uv pip install --python $VENV_PYTHON setuptools wheel packaging
 
       - name: Clone SageAttention
         run: |
@@ -148,7 +149,7 @@ jobs:
           MAX_JOBS: "2"
           PATH: "/build-venv/bin:/usr/local/cuda/bin:$PATH"
         run: |
-          /build-venv/bin/pip wheel . --no-deps --no-build-isolation -w /wheels
+          $VENV_PYTHON -m pip wheel . --no-deps --no-build-isolation -w /wheels
 
       - name: List built wheels
         run: ls -lah /wheels/
@@ -157,8 +158,8 @@ jobs:
         env:
           HF_TOKEN: ${{ secrets.HF_TOKEN }}
         run: |
-          /build-venv/bin/pip install huggingface_hub
-          /build-venv/bin/python -c "
+          uv pip install --python $VENV_PYTHON huggingface_hub
+          $VENV_PYTHON -c "
           from huggingface_hub import HfApi
           import glob
           api = HfApi()
