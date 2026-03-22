@@ -6,8 +6,8 @@ Thanks for your interest in contributing! Here's how to get started.
 
 ```bash
 # Clone and install in development mode
-git clone https://github.com/UmeAiRT/ComfyUI-Auto_installer.git
-cd ComfyUI-Auto_installer
+git clone https://github.com/UmeAiRT/ComfyUI-Auto_installer-Python.git
+cd ComfyUI-Auto_installer-Python
 pip install -e ".[dev]"
 ```
 
@@ -44,7 +44,7 @@ src/
 ├── cli.py              # Typer CLI entry point
 ├── enums.py            # InstallType, NodeTier, InstallerFatalError
 ├── config.py           # Pydantic models for dependencies.json
-├── installer/          # 12-step installation orchestrator
+├── installer/          # 13-step installation orchestrator
 │   ├── install.py      # Main orchestrator
 │   ├── system.py       # Git, aria2 installation
 │   ├── environment.py  # venv / conda creation

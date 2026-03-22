@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.0.0] — Stable Release
+
+### Changed
+
+- **Version bump** — `5.0.0a3` → `5.0.0` (Production/Stable).
+- **Docstrings** — `run_install()` and `CONTRIBUTING.md` now reference "13 steps" (was "12").
+- **CONTRIBUTING.md** — Fixed repository clone URL to `ComfyUI-Auto_installer-Python`.
+
+### Removed
+
+- **`bootstrap/` legacy folder** — 4 unused scripts (`install.bat`, `install.sh`, `remote-install.ps1`, `remote-install.sh`) from the PowerShell era. The real entry points are `Install.bat` and `Install.sh` at the project root.
+
 ## [5.0.0-alpha.3] — SageAttention CI & Docker Lite
 
 ### Added

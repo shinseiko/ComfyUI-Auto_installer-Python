@@ -97,7 +97,7 @@ def run_install(
     cuda_version: str = "",
     skip_nodes: bool = False,
 ) -> None:
-    """Run the complete ComfyUI installation in 12 unified steps.
+    """Run the complete ComfyUI installation in 13 unified steps.
 
     Resolves *install_path* to an absolute path, initialises the
     logger, then executes each step sequentially.  Any fatal

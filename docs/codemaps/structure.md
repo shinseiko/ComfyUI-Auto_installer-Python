@@ -7,7 +7,6 @@
 | `Install.bat` / `Install.sh` | **USER ENTRY POINT**. Zero-dependency bootstrap: downloads `uv`, creates venv, asks install path. |
 | `src/` | **CORE LOGIC**. All Python source code. |
 | `scripts/` | **CONFIGURATION**. JSON configs, manifests, and data files. |
-| `bootstrap/` | Legacy bootstrap scripts (kept for reference). |
 | `tests/` | pytest test suite. |
 | `docs/codemaps/` | Internal architectural documentation. |
 | `.cursorrules` | AI Agent compact instructions. |

@@ -176,7 +176,6 @@ The installer supports **NVIDIA** (`cu130`/`cu128`), **AMD** (`rocm71` on Linux,
 | `scripts/nunchaku_versions.json` | Version matrix for nunchaku node |
 | `Install.bat` / `Install.sh` | Zero-dependency bootstrap: downloads uv, creates venv (system Python preferred), launches CLI |
 | `Dockerfile` / `docker-compose.yml` | Docker container with `--skip-nodes` for lightweight images, runtime entrypoint for nodes |
-| `bootstrap/` | Legacy bootstrap scripts (kept for reference). |
 | `tests/` | pytest test suite |
 
 ## Critical Files
