@@ -1,6 +1,7 @@
 # syntax=docker/dockerfile:1.4
-# ── Base image: CUDA 13.0 + cuDNN runtime for RTX 50X0 / 40X0 / 30X0 support ──
-FROM nvidia/cuda:13.0.2-cudnn-runtime-ubuntu24.04
+# ── Base image: CUDA 13.0 runtime for RTX 50X0 / 40X0 / 30X0 support ──
+# Note: cuDNN is NOT included — PyTorch bundles its own copy.
+FROM nvidia/cuda:13.0.2-runtime-ubuntu24.04
 
 # ── Build arguments ──────────────────────────────────────────────
 # VARIANT controls the image flavor:

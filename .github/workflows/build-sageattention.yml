@@ -36,7 +36,7 @@ jobs:
     name: "SA2 — Python ${{ matrix.python }} (sm_80+PTX)"
     runs-on: ubuntu-latest
     container:
-      image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
+      image: nvidia/cuda:13.0.2-devel-ubuntu24.04
     strategy:
       fail-fast: false
       matrix:
@@ -120,7 +120,7 @@ jobs:
     name: "SA3 Blackwell — Python 3.13 (sm_100)"
     runs-on: ubuntu-latest
     container:
-      image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
+      image: nvidia/cuda:13.0.2-devel-ubuntu24.04
     steps:
       - name: Install system dependencies
         run: |
