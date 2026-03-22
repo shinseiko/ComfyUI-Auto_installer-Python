@@ -13,13 +13,15 @@ FROM nvidia/cuda:13.0.2-runtime-ubuntu24.04
 ARG VARIANT=standard
 
 # Install system dependencies in a single layer
-# build-essential is only needed for standard/cloud (compilation during install)
-# lite variants skip it entirely since PyTorch is installed at runtime from wheels
+# build-essential is needed for all variants: standard installs at build time,
+# lite variants install at runtime (insightface, cupy require C++ compilation)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
     python3.12-venv \
+    python3.12-dev \
     python3-pip \
     git \
+    build-essential \
     aria2 \
     curl \
     libgl1 \
@@ -28,11 +30,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libxext6 \
     libxrender1 \
     libxcb1 \
-    && if [ "$VARIANT" = "standard" ] || [ "$VARIANT" = "cloud" ]; then \
-         apt-get install -y --no-install-recommends \
-           python3.12-dev \
-           build-essential; \
-       fi \
     && ln -sf /usr/bin/python3.12 /usr/bin/python3 \
     && ln -sf /usr/bin/python3 /usr/bin/python \
     && rm -rf /var/lib/apt/lists/* \
