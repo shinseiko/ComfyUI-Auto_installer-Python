@@ -84,7 +84,7 @@ from src.utils.prompts import confirm
 if TYPE_CHECKING:
     from src.utils.logging import InstallerLogger
 
-TOTAL_STEPS = 12
+TOTAL_STEPS = 13
 
 
 def run_install(
