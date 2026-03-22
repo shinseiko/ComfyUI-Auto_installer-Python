@@ -24,7 +24,7 @@ You have two options for where your data lives:
 ### Option 1: Docker Volume (recommended)
 
 ```bash
-docker run --gpus all -p 8188:8188 -v comfyui:/data ghcr.io/umeairt/comfyui:latest
+docker run --gpus all --name comfyui -p 8188:8188 -v comfyui:/data ghcr.io/umeairt/comfyui:latest
 ```
 
 Docker manages the storage. Data persists until you explicitly delete the volume. Simple and cross-platform.
@@ -32,7 +32,7 @@ Docker manages the storage. Data persists until you explicitly delete the volume
 ### Option 2: Local Folder
 
 ```bash
-docker run --gpus all -p 8188:8188 -v ./comfyui_data:/data ghcr.io/umeairt/comfyui:latest
+docker run --gpus all --name comfyui -p 8188:8188 -v ./comfyui_data:/data ghcr.io/umeairt/comfyui:latest
 ```
 
 Data lives in `./comfyui_data/` on your disk — you can see and edit the files directly:

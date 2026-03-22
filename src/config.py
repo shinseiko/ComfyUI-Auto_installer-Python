@@ -74,8 +74,10 @@ class WheelConfig(BaseModel):
         """Pick the wheel matching the running Python and CUDA version.
 
         Resolution order for versioned wheels:
-        1. ``{cuda_tag}_{cpython_tag}`` — exact CUDA + Python match
-        2. ``{cpython_tag}`` — CUDA-agnostic fallback
+        1. ``{platform}_{cuda_tag}_{cpython_tag}`` — OS + CUDA + Python match
+        2. ``{cuda_tag}_{cpython_tag}`` — OS-agnostic CUDA + Python match
+        3. ``{platform}_{cpython_tag}`` — OS + Python match
+        4. ``{cpython_tag}`` — OS-agnostic Python fallback
 
         Args:
             python_version: (major, minor) tuple, e.g. (3, 13).
@@ -84,11 +86,19 @@ class WheelConfig(BaseModel):
         Returns:
             (name, url, sha256_or_None) tuple, or None if no match.
         """
+        import sys
+        platform = "windows" if sys.platform == "win32" else "macos" if sys.platform == "darwin" else "linux"
         cp_tag = f"cp{python_version[0]}{python_version[1]}"
 
         if self.versions:
-            # Try CUDA-specific key first, then cpython-only fallback
-            for key in ([f"{cuda_tag}_{cp_tag}", cp_tag] if cuda_tag else [cp_tag]):
+            keys_to_try = []
+            if cuda_tag:
+                keys_to_try.append(f"{platform}_{cuda_tag}_{cp_tag}")
+                keys_to_try.append(f"{cuda_tag}_{cp_tag}")
+            keys_to_try.append(f"{platform}_{cp_tag}")
+            keys_to_try.append(cp_tag)
+
+            for key in keys_to_try:
                 url = self.versions.get(key)
                 if url:
                     whl_name = url.rsplit("/", 1)[-1].removesuffix(".whl")

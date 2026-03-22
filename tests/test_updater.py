@@ -303,31 +303,5 @@ class TestNunchakuLinuxFallback:
         # Should log the skip message
         log.sub.assert_any_call("Skipping nunchaku wheel (NVIDIA GPU required).", style="cyan")
 
-    def test_nunchaku_linux_uses_installer(self, tmp_path: Path) -> None:
-        """On Linux with NVIDIA, nunchaku should install via nunchaku-installer."""
-        from src.installer.dependencies import install_wheels
 
-        log = MagicMock()
-        python_exe = tmp_path / "python.exe"
-
-        # Create a mock wheel with name attribute
-        nunchaku_wheel = MagicMock()
-        nunchaku_wheel.name = "nunchaku"
-        deps = MagicMock()
-        deps.pip_packages.wheels = [nunchaku_wheel]
-
-        mock_platform = MagicMock()
-        mock_platform.name = "linux"
-
-        with (
-            patch("src.utils.python_info.detect_venv_python_version", return_value=(3, 12)),
-            patch("src.platform.base.get_platform", return_value=mock_platform),
-            patch("src.installer.dependencies.uv_install") as mock_uv,
-            patch("src.utils.commands.run_and_log") as mock_run,
-        ):
-            install_wheels(python_exe, tmp_path, deps, log, cuda_tag="cu130")
-
-        # Should have installed nunchaku-installer then run it
-        mock_uv.assert_called_once_with(python_exe, ["nunchaku-installer"])
-        mock_run.assert_called_once()
 

@@ -146,25 +146,29 @@ class TestWheelConfigChecksums:
         assert result == ("pkg", "https://example.com/pkg.whl", "deadbeef")
 
     def test_resolve_cuda_tag_exact_match(self) -> None:
-        """resolve() uses {cuda}_{cpython} composite tag when available."""
+        """resolve() uses {platform}_{cuda}_{cpython} composite tag when available."""
         from src.config import WheelConfig
+        from unittest.mock import patch
         whl = WheelConfig(
             name="pkg",
-            versions={"cu130_cp313": "https://example.com/pkg-cu130.whl"},
-            checksums={"cu130_cp313": "deadbeef"},
+            versions={"linux_cu130_cp313": "https://example.com/pkg-linux-cu130.whl"},
+            checksums={"linux_cu130_cp313": "deadbeef"},
         )
-        result = whl.resolve((3, 13), cuda_tag="cu130")
-        assert result == ("pkg-cu130", "https://example.com/pkg-cu130.whl", "deadbeef")
+        with patch("sys.platform", "linux"):
+            result = whl.resolve((3, 13), cuda_tag="cu130")
+        assert result == ("pkg-linux-cu130", "https://example.com/pkg-linux-cu130.whl", "deadbeef")
 
     def test_resolve_cuda_tag_fallback(self) -> None:
-        """resolve() falls back to just {cpython} if cuda tag provided but not in dict."""
+        """resolve() falls back to OS-agnostic then {cpython} if explicit tags provided but not in dict."""
         from src.config import WheelConfig
         whl = WheelConfig(
             name="pkg",
             versions={"cp313": "https://example.com/pkg-any.whl"},
             checksums={"cp313": "beef"},
         )
-        result = whl.resolve((3, 13), cuda_tag="cu130")
+        from unittest.mock import patch
+        with patch("sys.platform", "linux"):
+            result = whl.resolve((3, 13), cuda_tag="cu130")
         assert result == ("pkg-any", "https://example.com/pkg-any.whl", "beef")
 
     def test_resolve_returns_none_checksum_when_missing(self) -> None:
