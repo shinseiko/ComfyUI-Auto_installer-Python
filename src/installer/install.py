@@ -211,13 +211,14 @@ def run_install(
     log.step("External Folders Architecture")
     setup_junction_architecture(install_path, comfy_path, log)
 
-    # ── Step 6b: GPU Detection & Selection ────────────────────────────
+    # ── Step 7: Core Dependencies ─────────────────────────────────
+    log.step("Core Dependencies")
+
+    # GPU detection (determines CUDA tag for PyTorch install)
     from src.installer.gpu_setup import detect_and_select_gpu
 
     cuda_tag = detect_and_select_gpu(platform, deps, log, cuda_override=cuda_version)
 
-    # ── Step 7: Core Dependencies ─────────────────────────────────
-    log.step("Core Dependencies")
     install_core_dependencies(python_exe, comfy_path, deps, log, cuda_tag=cuda_tag)
 
     # ── Step 8: Python Packages ───────────────────────────────────
