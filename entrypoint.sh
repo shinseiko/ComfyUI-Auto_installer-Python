@@ -80,6 +80,7 @@ if [ "$JUPYTER_ENABLE" = "true" ]; then
             --ServerApp.token="${JUPYTER_TOKEN}" \
             --ServerApp.allow_origin="*" \
             --ServerApp.allow_remote_access=True \
+            --ServerApp.terminado_settings='{"shell_command": ["/bin/bash"]}' \
             --ServerApp.root_dir=/data &
     else
         echo ""
