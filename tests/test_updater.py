@@ -207,12 +207,127 @@ class TestUpdateDependencies:
             patch("src.installer.updater.confirm", return_value=True),
             patch("src.installer.updater.uv_install") as mock_uv,
             patch("src.installer.optimizations._get_cuda_version_from_torch", return_value=None),
+            patch("src.installer.dependencies.install_python_packages"),
+            patch("src.installer.dependencies.install_wheels"),
         ):
-            # This call would crash before the fix with:
-            # AttributeError: 'dict' object has no attribute 'packages'
             update_dependencies(python_exe, comfy_path, install_path, log)
 
         # Should have called uv_install for torch with the fallback tag
         torch_calls = [c for c in mock_uv.call_args_list if c[0][1] and "torch" in c[0][1]]
         assert len(torch_calls) >= 1
+
+
+class TestInstallOptimizations:
+    """Tests for _install_optimizations."""
+
+    def test_skips_when_no_deps_file(self, tmp_path: Path) -> None:
+        """Should skip gracefully when dependencies.json is absent."""
+        from src.installer.updater import _install_optimizations
+
+        log = MagicMock()
+        python_exe = tmp_path / "python.exe"
+        comfy_path = tmp_path / "ComfyUI"
+        install_path = tmp_path / "install"
+        install_path.mkdir()
+        (install_path / "scripts").mkdir()
+        # No dependencies.json
+
+        _install_optimizations(python_exe, comfy_path, install_path, log)
+        log.step.assert_called_once_with("GPU Optimizations")
+        log.sub.assert_called_once()
+
+    def test_calls_install_optimizations(self, tmp_path: Path) -> None:
+        """Should call install_optimizations when deps file exists."""
+        from src.installer.updater import _install_optimizations
+
+        log = MagicMock()
+        python_exe = tmp_path / "python.exe"
+        comfy_path = tmp_path / "ComfyUI"
+        install_path = tmp_path / "install"
+        scripts_dir = install_path / "scripts"
+        scripts_dir.mkdir(parents=True)
+
+        deps_data = {
+            "repositories": {"comfyui": {"url": "https://example.com"}},
+            "pip_packages": {"comfyui_requirements": "requirements.txt", "torch": {}},
+            "optimizations": {"packages": []},
+        }
+        (scripts_dir / "dependencies.json").write_text(json.dumps(deps_data), encoding="utf-8")
+
+        with patch("src.installer.optimizations.install_optimizations") as mock_opt:
+            _install_optimizations(python_exe, comfy_path, install_path, log)
+            mock_opt.assert_called_once()
+
+    def test_handles_exception_gracefully(self, tmp_path: Path) -> None:
+        """Should catch and log exceptions without crashing."""
+        from src.installer.updater import _install_optimizations
+
+        log = MagicMock()
+        python_exe = tmp_path / "python.exe"
+        comfy_path = tmp_path / "ComfyUI"
+        install_path = tmp_path / "install"
+        scripts_dir = install_path / "scripts"
+        scripts_dir.mkdir(parents=True)
+
+        deps_data = {
+            "repositories": {"comfyui": {"url": "https://example.com"}},
+            "pip_packages": {"comfyui_requirements": "requirements.txt", "torch": {}},
+            "optimizations": {"packages": []},
+        }
+        (scripts_dir / "dependencies.json").write_text(json.dumps(deps_data), encoding="utf-8")
+
+        with patch("src.installer.optimizations.install_optimizations", side_effect=RuntimeError("boom")):
+            # Should not raise
+            _install_optimizations(python_exe, comfy_path, install_path, log)
+        log.warning.assert_called_once()
+
+
+class TestNunchakuLinuxFallback:
+    """Tests for nunchaku Linux install path in install_wheels."""
+
+    def test_nunchaku_skipped_without_nvidia(self, tmp_path: Path) -> None:
+        """Nunchaku should be skipped when no NVIDIA GPU (cuda_tag is None)."""
+        from src.installer.dependencies import install_wheels
+
+        log = MagicMock()
+        python_exe = tmp_path / "python.exe"
+
+        deps = MagicMock()
+        wheel_mock = MagicMock()
+        wheel_mock.name = "nunchaku"
+        deps.pip_packages.wheels = [wheel_mock]
+
+        with patch("src.utils.python_info.detect_venv_python_version", return_value=(3, 12)):
+            install_wheels(python_exe, tmp_path, deps, log, cuda_tag=None)
+
+        # Should log the skip message
+        log.sub.assert_any_call("Skipping nunchaku wheel (NVIDIA GPU required).", style="cyan")
+
+    def test_nunchaku_linux_uses_installer(self, tmp_path: Path) -> None:
+        """On Linux with NVIDIA, nunchaku should install via nunchaku-installer."""
+        from src.installer.dependencies import install_wheels
+
+        log = MagicMock()
+        python_exe = tmp_path / "python.exe"
+
+        # Create a mock wheel with name attribute
+        nunchaku_wheel = MagicMock()
+        nunchaku_wheel.name = "nunchaku"
+        deps = MagicMock()
+        deps.pip_packages.wheels = [nunchaku_wheel]
+
+        mock_platform = MagicMock()
+        mock_platform.name = "linux"
+
+        with (
+            patch("src.utils.python_info.detect_venv_python_version", return_value=(3, 12)),
+            patch("src.platform.base.get_platform", return_value=mock_platform),
+            patch("src.installer.dependencies.uv_install") as mock_uv,
+            patch("src.utils.commands.run_and_log") as mock_run,
+        ):
+            install_wheels(python_exe, tmp_path, deps, log, cuda_tag="cu130")
+
+        # Should have installed nunchaku-installer then run it
+        mock_uv.assert_called_once_with(python_exe, ["nunchaku-installer"])
+        mock_run.assert_called_once()
 
