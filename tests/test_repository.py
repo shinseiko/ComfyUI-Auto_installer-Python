@@ -108,3 +108,89 @@ class TestExternalFolders:
     def test_has_at_least_5_folders(self) -> None:
         """Should have a reasonable number of external folders."""
         assert len(EXTERNAL_FOLDERS) >= 5
+
+
+class TestSetupJunctionArchitecture:
+    """Tests for setup_junction_architecture."""
+
+    def test_case1_moves_internal_to_external(self, tmp_path: Path) -> None:
+        """Case 1: internal exists, no external → move."""
+        from src.installer.repository import setup_junction_architecture
+
+        comfy_path = tmp_path / "ComfyUI"
+        comfy_path.mkdir()
+        internal = comfy_path / "models"
+        internal.mkdir()
+        (internal / "file.txt").write_text("data")
+
+        log = MagicMock()
+        mock_platform = MagicMock()
+        mock_platform.is_link.return_value = False
+
+        with patch("src.installer.repository.get_platform", return_value=mock_platform):
+            setup_junction_architecture(tmp_path, comfy_path, log)
+
+        assert (tmp_path / "models" / "file.txt").exists()
+        mock_platform.create_link.assert_called()
+
+    def test_case2_merges_internal_into_external(self, tmp_path: Path) -> None:
+        """Case 2: both exist → merge into external, delete internal."""
+        from src.installer.repository import setup_junction_architecture
+
+        comfy_path = tmp_path / "ComfyUI"
+        comfy_path.mkdir()
+
+        # Create both internal and external
+        internal = comfy_path / "models"
+        internal.mkdir()
+        (internal / "new.txt").write_text("new")
+
+        external = tmp_path / "models"
+        external.mkdir()
+        (external / "existing.txt").write_text("existing")
+
+        log = MagicMock()
+        mock_platform = MagicMock()
+        mock_platform.is_link.return_value = False
+
+        with patch("src.installer.repository.get_platform", return_value=mock_platform):
+            setup_junction_architecture(tmp_path, comfy_path, log)
+
+        # External should have both files
+        assert (external / "existing.txt").exists()
+        assert (external / "new.txt").exists()
+        # Internal should have been deleted
+        assert not internal.exists()
+
+    def test_case3_creates_external(self, tmp_path: Path) -> None:
+        """Case 3: neither exists → create external."""
+        from src.installer.repository import setup_junction_architecture
+
+        comfy_path = tmp_path / "ComfyUI"
+        comfy_path.mkdir()
+
+        log = MagicMock()
+        mock_platform = MagicMock()
+        mock_platform.is_link.return_value = False
+
+        with patch("src.installer.repository.get_platform", return_value=mock_platform):
+            setup_junction_architecture(tmp_path, comfy_path, log)
+
+        # Verify external folders were created
+        for folder in EXTERNAL_FOLDERS:
+            assert (tmp_path / folder).exists()
+
+    def test_successful_clone(self, tmp_path: Path) -> None:
+        """Should clone successfully on first attempt."""
+        log = MagicMock()
+        comfy_path = tmp_path / "ComfyUI"
+        deps = MagicMock()
+        deps.repositories.comfyui.url = "https://example.com/test.git"
+
+        def fake_clone(*args, **kwargs):
+            comfy_path.mkdir(exist_ok=True)
+
+        with patch("src.installer.repository.run_and_log", side_effect=fake_clone):
+            clone_comfyui(tmp_path, comfy_path, deps, log)
+
+        log.sub.assert_any_call("ComfyUI cloned successfully.", style="success")
