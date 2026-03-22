@@ -30,24 +30,15 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
-      options: --privileged
     strategy:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12", "3.13"]
     steps:
-      - name: Add 10GB swap (runners only have 7GB RAM)
-        run: |
-          fallocate -l 10G /tmp/build-swap
-          chmod 600 /tmp/build-swap
-          mkswap /tmp/build-swap
-          swapon /tmp/build-swap
-          free -h
-
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
-            git curl build-essential ninja-build ca-certificates
+            git curl build-essential ca-certificates
 
       - name: Install uv
         run: |
@@ -119,20 +110,11 @@ jobs:
     runs-on: ubuntu-latest
     container:
       image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
-      options: --privileged
     steps:
-      - name: Add 10GB swap (runners only have 7GB RAM)
-        run: |
-          fallocate -l 10G /tmp/build-swap
-          chmod 600 /tmp/build-swap
-          mkswap /tmp/build-swap
-          swapon /tmp/build-swap
-          free -h
-
       - name: Install system dependencies
         run: |
           apt-get update && apt-get install -y --no-install-recommends \
-            git curl build-essential ninja-build ca-certificates
+            git curl build-essential ca-certificates
 
       - name: Install uv
         run: |
