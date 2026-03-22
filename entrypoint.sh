@@ -58,6 +58,11 @@ echo "  Jupyter   : enabled (port ${JUPYTER_PORT})"
 fi
 echo ""
 
+# ─── Persistent UV Cache ────────────────────────────────────────
+# uv's cache is redirected to the persistent volume. On a fresh Pod
+# with an existing volume, pip packages install instantly from cache.
+export UV_CACHE_DIR="/data/uv_cache"
+
 # ─── Update / install custom nodes ──────────────────────────────
 python -m src.cli update --path /app --yes --verbose --nodes "${NODE_TIER}"
 
