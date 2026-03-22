@@ -15,11 +15,9 @@ scripts/venv/
 # Logs
 *.log
 
-# Claude Code (keep CLAUDE.md and settings.json, ignore the rest)
-.claude/rules/
-.claude/plans/
-.claude/plugins/
-.claude/hooks.json
+# Agent configs (not used — see AGENTS.md)
+.claude/
+.cursorrules
 
 # OS
 Thumbs.db
