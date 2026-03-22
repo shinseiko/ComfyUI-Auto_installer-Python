@@ -162,7 +162,7 @@ def run_update(install_path: Path, *, verbose: bool = False, node_tier: str = "f
     """
     log = setup_logger(
         log_file=install_path / "logs" / "update_log.txt",
-        total_steps=5,
+        total_steps=6,
         verbose=verbose,
     )
     log.banner("UmeAiRT", "ComfyUI — Updater", __version__)
@@ -180,6 +180,9 @@ def run_update(install_path: Path, *, verbose: bool = False, node_tier: str = "f
 
     # Model security scan (non-blocking)
     _scan_models_warning(install_path, log)
+
+    # Install/update GPU optimizations (SageAttention, Triton, Flash-Attn)
+    _install_optimizations(python_exe, comfy_path, install_path, log)
 
     log.step("Update Complete!")
     log.success("All components have been updated.", level=1)
@@ -303,4 +306,29 @@ def _scan_models_warning(install_path: Path, log: InstallerLogger) -> None:
             )
     except Exception:  # noqa: BLE001
         log.sub("Scanner unavailable. Install picklescan for model scanning.", style="dim")
+
+
+def _install_optimizations(
+    python_exe: Path,
+    comfy_path: Path,
+    install_path: Path,
+    log: InstallerLogger,
+) -> None:
+    """Install/verify GPU optimizations (SageAttention, Triton, Flash-Attn).
+
+    Non-blocking — failures are logged but never halt the update.
+    """
+    log.step("GPU Optimizations")
+
+    deps_file = install_path / "scripts" / "dependencies.json"
+    if not deps_file.exists():
+        log.sub("dependencies.json not found. Skipping.", style="dim")
+        return
+
+    try:
+        deps = load_dependencies(deps_file)
+        from src.installer.optimizations import install_optimizations
+        install_optimizations(python_exe, comfy_path, install_path, deps, log)
+    except Exception as e:  # noqa: BLE001
+        log.warning(f"GPU optimization install failed: {e}", level=2)
 
