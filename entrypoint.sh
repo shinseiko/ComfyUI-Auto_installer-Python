@@ -81,6 +81,7 @@ if [ "$JUPYTER_ENABLE" = "true" ]; then
             --ServerApp.allow_origin="*" \
             --ServerApp.allow_remote_access=True \
             --ServerApp.terminado_settings='{"shell_command": ["/bin/bash"]}' \
+            --FileContentsManager.delete_to_trash=False \
             --ServerApp.root_dir=/data &
     else
         echo ""
