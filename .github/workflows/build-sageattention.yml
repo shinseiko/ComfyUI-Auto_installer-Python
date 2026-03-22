@@ -1,6 +1,10 @@
 # Build SageAttention wheels for multiple Python versions and GPU architectures.
 # Compiled wheels are uploaded to HuggingFace Assets for the installer to download.
 #
+# Strategy: SA2 uses "8.0+PTX" (native sm_80 + JIT for higher archs) to stay
+# within GitHub's 7 GB RAM limit. SA3 targets Blackwell sm_100 only.
+# A final job updates tools_manifest.json with SHA-256 hashes.
+#
 # Trigger: manual dispatch or tag push matching "sageattention-v*"
 name: Build SageAttention Wheels
 
@@ -25,8 +29,11 @@ env:
   VENV_PYTHON: "/build-venv/bin/python"
 
 jobs:
+  # ---------------------------------------------------------------------------
+  # SA2: "8.0+PTX" — compiles natively for sm_80, JIT for 86/89/90
+  # ---------------------------------------------------------------------------
   build-sa2:
-    name: "SA2 — Python ${{ matrix.python }} (sm_80→sm_90)"
+    name: "SA2 — Python ${{ matrix.python }} (sm_80+PTX)"
     runs-on: ubuntu-latest
     container:
       image: nvidia/cuda:13.0.2-cudnn-devel-ubuntu24.04
@@ -69,10 +76,11 @@ jobs:
       - name: Build SageAttention 2 wheel
         working-directory: /sageattention
         env:
-          TORCH_CUDA_ARCH_LIST: "8.0;8.6;8.9;9.0"
+          TORCH_CUDA_ARCH_LIST: "8.0+PTX"
           MAX_JOBS: "1"
           PATH: "/build-venv/bin:/usr/local/cuda/bin:$PATH"
         run: |
+          echo "Building for TORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST"
           $VENV_PYTHON -m pip wheel . --no-deps --no-build-isolation -w /wheels
 
       - name: List built wheels
@@ -101,10 +109,13 @@ jobs:
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sageattention2-cp${{ matrix.python }}-wheel
+          name: sa2-cp${{ matrix.python }}-wheel
           path: /wheels/*.whl
           retention-days: 30
 
+  # ---------------------------------------------------------------------------
+  # SA3 Blackwell: Python 3.13 only, sm_100
+  # ---------------------------------------------------------------------------
   build-sa3:
     name: "SA3 Blackwell — Python 3.13 (sm_100)"
     runs-on: ubuntu-latest
@@ -187,10 +198,13 @@ jobs:
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sageattention3-blackwell-wheel
+          name: sa3-blackwell-wheel
           path: /wheels/*.whl
           retention-days: 30
 
+  # ---------------------------------------------------------------------------
+  # Update tools_manifest.json with SHA-256 of all built wheels
+  # ---------------------------------------------------------------------------
   update-manifest:
     name: "Update tools_manifest.json"
     needs: [build-sa2, build-sa3]
@@ -201,7 +215,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           path: /tmp/wheels
-          pattern: sageattention*
+          pattern: sa*
           merge-multiple: true
 
       - name: List downloaded wheels
@@ -300,7 +314,7 @@ jobs:
               if "files" not in sa2:
                   sa2["files"] = {}
               sa2["files"].update(sa2_files)
-              sa2["_note"] = "Linux pre-compiled wheels. Auto-updated by CI."
+              sa2["_note"] = "Linux pre-compiled wheels (sm_80+PTX). Auto-updated by CI."
 
           if sa3_files:
               if "sageattention3_blackwell" not in manifest["whl"]:
