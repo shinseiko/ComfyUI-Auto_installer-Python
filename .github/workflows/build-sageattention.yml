@@ -17,7 +17,7 @@ on:
 
 env:
   # HuggingFace repo where wheels are uploaded
-  HF_REPO: UmeAiRT/ComfyUI-Auto_installer
+  HF_REPO: UmeAiRT/ComfyUI-Auto-Installer-Assets
   HF_WHEEL_DIR: whl
   # PyTorch version must match the one in dependencies.json
   TORCH_VERSION: "2.10.0"
