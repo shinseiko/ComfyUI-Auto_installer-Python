@@ -1,11 +1,20 @@
 services:
   comfyui:
-    build: .
+    build:
+      context: .
+      args:
+        # ── Image Variant ───────────────────────────────────────────
+        # Controls which flavor of the image to build:
+        #   standard → ComfyUI only (default)
+        #   cloud    → ComfyUI + JupyterLab (for RunPod / cloud)
+        VARIANT: standard
     image: umeairt/comfyui:latest
     container_name: umeairt-comfyui
     restart: unless-stopped
     ports:
       - "8188:8188"
+      # Uncomment for JupyterLab (cloud variant only):
+      # - "8888:8888"
     environment:
       # ── Custom Nodes Bundle ─────────────────────────────────────
       # Controls which set of custom nodes gets installed on startup.
@@ -14,6 +23,12 @@ services:
       #   umeairt  → + UmeAiRT Sync/Toolkit + essential creative nodes
       #   full     → + all community nodes (default, ~34 nodes)
       - NODE_TIER=full
+      # ── JupyterLab (cloud variant only) ─────────────────────────
+      # Requires: VARIANT: cloud in build args above.
+      # Uncomment these lines to enable JupyterLab at startup:
+      # - JUPYTER_ENABLE=true
+      # - JUPYTER_TOKEN=mysecrettoken
+      # - JUPYTER_PORT=8888
     # Run as the non-root user created in the Dockerfile (UID 1000).
     # If your host volumes are owned by a different UID, set PUID/PGID
     # in a .env file and rebuild with matching --build-arg values.

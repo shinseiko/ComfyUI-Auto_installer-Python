@@ -2,6 +2,12 @@
 # ── Base image: CUDA 13.0 + cuDNN runtime for RTX 50X0 / 40X0 / 30X0 support ──
 FROM nvidia/cuda:13.0.2-cudnn-runtime-ubuntu24.04
 
+# ── Build arguments ──────────────────────────────────────────────
+# VARIANT controls the image flavor:
+#   standard (default) → ComfyUI only
+#   cloud              → ComfyUI + JupyterLab (for RunPod / cloud)
+ARG VARIANT=standard
+
 # Install system dependencies (Python 3.12 is native to Ubuntu 24.04)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
@@ -36,6 +42,15 @@ COPY --chown=1000:1000 . /app
 # Install the installer package system-wide
 RUN uv pip install --system -e .
 
+# ── Cloud variant: install JupyterLab ────────────────────────────
+# Only installed when building with: docker build --build-arg VARIANT=cloud
+RUN if [ "$VARIANT" = "cloud" ]; then \
+      echo "Installing JupyterLab (cloud variant)..." && \
+      uv pip install --system jupyterlab; \
+    else \
+      echo "Standard variant — skipping JupyterLab."; \
+    fi
+
 # Switch to non-root user for the build phase
 USER 1000
 
@@ -48,8 +63,8 @@ RUN python -m src.cli install --path /app --type venv --yes --cuda cu130 --skip-
 # Fix line endings (Git on Windows may convert LF→CRLF) and set executable
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# Expose the standard ComfyUI web port
-EXPOSE 8188
+# Expose ComfyUI (8188) and JupyterLab (8888, cloud variant only)
+EXPOSE 8188 8888
 
 # Launch the wrapper
 ENTRYPOINT ["/app/entrypoint.sh"]

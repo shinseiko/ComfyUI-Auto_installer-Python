@@ -92,5 +92,13 @@ jobs:
           echo "Checking venv exists..."
           docker run --rm --entrypoint ls umeairt/comfyui:ci /app/scripts/venv/bin/python
 
-          echo "✅ All Docker image checks passed"
+          echo "✅ All standard image checks passed"
+
+      - name: Build Cloud Variant
+        run: docker build --build-arg VARIANT=cloud -t umeairt/comfyui:cloud-ci .
+
+      - name: Verify Cloud Variant
+        run: |
+          echo "Checking JupyterLab is installed..."
+          docker run --rm --entrypoint python umeairt/comfyui:cloud-ci -c "import jupyterlab; print(f'✅ JupyterLab {jupyterlab.__version__}')"
 
