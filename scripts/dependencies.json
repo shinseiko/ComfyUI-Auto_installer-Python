@@ -59,6 +59,12 @@
       {
         "name": "nunchaku",
         "versions": {
+          "linux_cu130_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-linux_x86_64.whl",
+          "linux_cu130_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-linux_x86_64.whl",
+          "linux_cu130_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-linux_x86_64.whl",
+          "linux_cu128_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp311-cp311-linux_x86_64.whl",
+          "linux_cu128_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp312-cp312-linux_x86_64.whl",
+          "linux_cu128_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp313-cp313-linux_x86_64.whl",
           "cu130_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-win_amd64.whl",
           "cu130_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-win_amd64.whl",
           "cu130_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl",
@@ -67,6 +73,12 @@
           "cu128_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp313-cp313-win_amd64.whl"
         },
         "checksums": {
+          "linux_cu130_cp311": "41764c63338f0f1635187d597e5ff84d7088b93d224e26c3c12112f6bc6ff076",
+          "linux_cu130_cp312": "ea55dce13fd87851479a622c71f890d6b74cf984da098a562a7d4e12ab23edba",
+          "linux_cu130_cp313": "8a132f4b3866b7b271fc00fd244685ab49b058d3deb4afa69b7150e295a79883",
+          "linux_cu128_cp311": "1051614268b3006c141e9e2f10c1a83a029ff2795f603341670fbf612eda2654",
+          "linux_cu128_cp312": "c8d8d39a859401e467f952961348edd6e58f8eb35b5dd448f389ccb4b51f9867",
+          "linux_cu128_cp313": "5f856946d834a3c8c2682d9c9ebf858c86c1ab9fe140563a4ac0a4a6625d9c04",
           "cu130_cp311": "a31fbb48650f9a5c0ed48e447f34e64e471318ff3466f73c9167a09bede28771",
           "cu130_cp312": "20d8c4cef6664c2dd6f2d44155e6dd2d4d36163439f70da31ef945af3c8c6149",
           "cu130_cp313": "d3a922fa918fb2c3c815bf4fc5645ce663ec5354e7c026b384269813785b913d",
