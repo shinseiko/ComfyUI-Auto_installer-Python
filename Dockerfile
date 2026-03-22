@@ -14,7 +14,8 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     curl \
     && ln -sf /usr/bin/python3.12 /usr/bin/python3 \
     && ln -sf /usr/bin/python3 /usr/bin/python \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED
 
 # Install uv as a standalone binary (matches the bootstrap approach)
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
