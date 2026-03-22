@@ -18,8 +18,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     && rm -f /usr/lib/python3.12/EXTERNALLY-MANAGED
 
 # Install uv as a standalone binary (matches the bootstrap approach)
+# Copy (not symlink) because /root/.local is inaccessible to non-root users
 RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
-    && ln -sf /root/.local/bin/uv /usr/local/bin/uv
+    && cp /root/.local/bin/uv /usr/local/bin/uv
 
 # Configure workspace
 WORKDIR /app
