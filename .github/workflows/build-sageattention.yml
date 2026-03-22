@@ -190,3 +190,151 @@ jobs:
           name: sageattention3-blackwell-wheel
           path: /wheels/*.whl
           retention-days: 30
+
+  update-manifest:
+    name: "Update tools_manifest.json"
+    needs: [build-sa2, build-sa3]
+    if: always() && (needs.build-sa2.result == 'success' || needs.build-sa3.result == 'success')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all wheel artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: /tmp/wheels
+          pattern: sageattention*
+          merge-multiple: true
+
+      - name: List downloaded wheels
+        run: ls -lah /tmp/wheels/
+
+      - name: Install uv and dependencies
+        run: |
+          curl -LsSf https://astral.sh/uv/install.sh | sh
+          export PATH="$HOME/.local/bin:$PATH"
+          uv python install 3.13
+          uv venv /tmp/venv --python 3.13
+          uv pip install --python /tmp/venv/bin/python huggingface_hub
+
+      - name: Update manifest on HuggingFace
+        env:
+          HF_TOKEN: ${{ secrets.HF_TOKEN }}
+          HF_REPO: ${{ env.HF_REPO }}
+        run: |
+          /tmp/venv/bin/python << 'PYEOF'
+          import json, hashlib, glob, os
+          from huggingface_hub import HfApi, hf_hub_download
+
+          api = HfApi()
+          repo_id = os.environ["HF_REPO"]
+
+          # Download existing manifest
+          try:
+              manifest_path = hf_hub_download(
+                  repo_id=repo_id,
+                  filename="tools_manifest.json",
+                  repo_type="model",
+              )
+              with open(manifest_path) as f:
+                  manifest = json.load(f)
+          except Exception as e:
+              print(f"Could not download existing manifest: {e}")
+              print("Creating new manifest structure")
+              manifest = {"_manifest_version": 1, "whl": {}}
+
+          # Ensure whl section exists
+          if "whl" not in manifest:
+              manifest["whl"] = {}
+
+          # Process all downloaded wheels
+          wheels = glob.glob("/tmp/wheels/*.whl")
+          print(f"Found {len(wheels)} wheels to process")
+
+          sa2_files = {}
+          sa3_files = {}
+
+          for whl_path in sorted(wheels):
+              filename = os.path.basename(whl_path)
+              # Compute SHA-256
+              sha256 = hashlib.sha256(open(whl_path, "rb").read()).hexdigest()
+              print(f"  {filename}: {sha256}")
+
+              # Determine SA version and Python version from filename
+              # sageattention-2.1.1-cp313-cp313-linux_x86_64.whl
+              # sageattn3-1.0.0-cp313-cp313-linux_x86_64.whl
+              parts = filename.split("-")
+              pkg_name = parts[0]
+              version = parts[1]
+
+              # Extract cpXYZ
+              cp_tag = parts[2]  # e.g. cp313
+
+              # Determine platform key
+              if "linux" in filename:
+                  platform_suffix = "linux"
+              elif "win" in filename:
+                  platform_suffix = "win"
+              else:
+                  platform_suffix = "other"
+
+              key = f"{cp_tag}_{platform_suffix}" if platform_suffix != "other" else cp_tag
+
+              entry = {
+                  "filename": f"whl/{filename}",
+                  "sha256": sha256
+              }
+
+              if pkg_name.startswith("sageattn3") or pkg_name.startswith("sageattention3"):
+                  sa3_files[key] = entry
+                  sa3_version = version
+              else:
+                  sa2_files[key] = entry
+                  sa2_version = version
+
+          # Update manifest — merge with existing, don't remove old entries
+          if sa2_files:
+              if "sageattention" not in manifest["whl"]:
+                  manifest["whl"]["sageattention"] = {"files": {}}
+              sa2 = manifest["whl"]["sageattention"]
+              sa2["version"] = sa2_version
+              sa2["platform"] = "linux"
+              if "files" not in sa2:
+                  sa2["files"] = {}
+              sa2["files"].update(sa2_files)
+              sa2["_note"] = "Linux pre-compiled wheels. Auto-updated by CI."
+
+          if sa3_files:
+              if "sageattention3_blackwell" not in manifest["whl"]:
+                  manifest["whl"]["sageattention3_blackwell"] = {"files": {}}
+              sa3 = manifest["whl"]["sageattention3_blackwell"]
+              sa3["version"] = sa3_version
+              sa3["platform"] = "linux"
+              if "files" not in sa3:
+                  sa3["files"] = {}
+              sa3["files"].update(sa3_files)
+              sa3["_note"] = "Blackwell (sm_100) only. Auto-updated by CI."
+
+          # Update timestamp
+          from datetime import date
+          manifest["_updated"] = str(date.today())
+
+          # Write and upload
+          manifest_out = "/tmp/tools_manifest.json"
+          with open(manifest_out, "w") as f:
+              json.dump(manifest, f, indent=2)
+              f.write("\n")
+
+          print("\n=== Updated manifest ===")
+          # Print only the sageattention sections
+          for key in ["sageattention", "sageattention3_blackwell"]:
+              if key in manifest.get("whl", {}):
+                  print(f"\n{key}:")
+                  print(json.dumps(manifest["whl"][key], indent=2))
+
+          api.upload_file(
+              path_or_fileobj=manifest_out,
+              path_in_repo="tools_manifest.json",
+              repo_id=repo_id,
+              repo_type="model",
+          )
+          print("\n✅ Manifest uploaded successfully!")
+          PYEOF
