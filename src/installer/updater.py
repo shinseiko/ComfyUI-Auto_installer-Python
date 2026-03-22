@@ -88,6 +88,18 @@ def update_custom_nodes(
 
     update_all_nodes(manifest, custom_nodes_dir, python_exe, log)
 
+    # Provision nunchaku_versions.json during updates as well
+    # (Handles Docker environments where nodes are skipped during initial build)
+    nunchaku_src = scripts_dir / "nunchaku_versions.json"
+    if not nunchaku_src.exists() and source_dir:
+        nunchaku_src = source_dir / "nunchaku_versions.json"
+
+    nunchaku_dst = custom_nodes_dir / "ComfyUI-nunchaku" / "nunchaku_versions.json"
+    if nunchaku_src.exists() and nunchaku_dst.parent.exists():
+        import shutil
+        shutil.copy2(nunchaku_src, nunchaku_dst)
+        log.sub("  nunchaku_versions.json provisioned.", style="success")
+
 
 def update_dependencies(
     python_exe: Path,
