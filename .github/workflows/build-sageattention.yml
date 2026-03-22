@@ -58,7 +58,7 @@ jobs:
 
       - name: Install build tools
         run: |
-          uv pip install --python $VENV_PYTHON setuptools wheel packaging
+          uv pip install --python $VENV_PYTHON pip setuptools wheel packaging
 
       - name: Clone SageAttention
         run: |
@@ -134,7 +134,7 @@ jobs:
 
       - name: Install build tools
         run: |
-          uv pip install --python $VENV_PYTHON setuptools wheel packaging
+          uv pip install --python $VENV_PYTHON pip setuptools wheel packaging
 
       - name: Clone SageAttention
         run: |
