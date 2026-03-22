@@ -4,15 +4,17 @@ services:
       context: .
       args:
         # ── Image Variant ───────────────────────────────────────────
-        #   standard → ComfyUI only (default)
-        #   cloud    → ComfyUI + JupyterLab (for RunPod / cloud)
+        #   standard   → ComfyUI with pre-installed PyTorch (default, ~4 GB)
+        #   cloud      → standard + JupyterLab (~4.5 GB)
+        #   lite       → Minimal image, installs PyTorch on first run (~1.5 GB)
+        #   lite-cloud → lite + JupyterLab (~1.7 GB)
         VARIANT: standard
     image: ghcr.io/umeairt/comfyui:latest
     container_name: umeairt-comfyui
     restart: unless-stopped
     ports:
       - "8188:8188"
-      # Uncomment for JupyterLab (cloud variant only):
+      # Uncomment for JupyterLab (cloud/lite-cloud variant only):
       # - "8888:8888"
     environment:
       # ── Custom Nodes Bundle ─────────────────────────────────────
@@ -20,8 +22,8 @@ services:
       #   umeairt  → + UmeAiRT Sync/Toolkit + essential creative nodes
       #   full     → + all community nodes (~34 nodes, default)
       - NODE_TIER=full
-      # ── JupyterLab (cloud variant only) ─────────────────────────
-      # Requires: VARIANT: cloud in build args above.
+      # ── JupyterLab (cloud/lite-cloud variant only) ──────────────
+      # Requires: VARIANT: cloud or lite-cloud in build args above.
       # - JUPYTER_ENABLE=true
       # - JUPYTER_TOKEN=mysecrettoken
       # - JUPYTER_PORT=8888

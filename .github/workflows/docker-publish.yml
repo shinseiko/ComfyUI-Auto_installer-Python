@@ -30,6 +30,10 @@ jobs:
             suffix: ""
           - variant: cloud
             suffix: "-cloud"
+          - variant: lite
+            suffix: "-lite"
+          - variant: lite-cloud
+            suffix: "-lite-cloud"
 
     steps:
       - uses: actions/checkout@v4

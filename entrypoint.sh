@@ -63,6 +63,20 @@ echo ""
 # with an existing volume, pip packages install instantly from cache.
 export UV_CACHE_DIR="/data/uv_cache"
 
+# ─── First-run install (lite variants only) ─────────────────────
+# Lite images don't pre-install PyTorch/ComfyUI. On first boot,
+# we run the full installer which saves everything into /app/scripts/venv.
+# Subsequent boots skip this because the venv already exists.
+if [ ! -d "/app/scripts/venv" ]; then
+    echo ""
+    echo "================================================="
+    echo "   First run — installing ComfyUI + PyTorch..."
+    echo "   This may take 5-10 minutes."
+    echo "================================================="
+    echo ""
+    python -m src.cli install --path /app --type venv --yes --cuda cu130 --skip-nodes
+fi
+
 # ─── Update / install custom nodes ──────────────────────────────
 python -m src.cli update --path /app --yes --verbose --nodes "${NODE_TIER}"
 

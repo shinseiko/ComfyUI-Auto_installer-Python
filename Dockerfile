@@ -1,12 +1,20 @@
 # syntax=docker/dockerfile:1.4
 # ──────────────────────────────────────────────────────────────────
-# Stage 1: BUILDER — install everything, compile, pre-install ComfyUI
+# UmeAiRT ComfyUI Docker Image
+#
+# Variants (set via --build-arg VARIANT=...):
+#   standard      → ComfyUI with pre-installed PyTorch venv (default)
+#   cloud         → standard + JupyterLab
+#   lite          → Minimal image — installs PyTorch on first run (~1.5 GB)
+#   lite-cloud    → lite + JupyterLab
 # ──────────────────────────────────────────────────────────────────
+
+# ── Stage 1: BUILDER ─────────────────────────────────────────────
 FROM nvidia/cuda:13.0.2-runtime-ubuntu24.04 AS builder
 
 ARG VARIANT=standard
 
-# Install ALL dependencies (including build tools) in one layer
+# Install ALL dependencies (including build tools for compilation)
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
     python3.12-venv \
@@ -35,38 +43,39 @@ RUN curl -LsSf https://astral.sh/uv/install.sh | sh \
 RUN uv python install 3.13
 
 WORKDIR /app
-
 RUN chown -R 1000:1000 /app && mkdir -p /data && chown -R 1000:1000 /data
-
 COPY --chown=1000:1000 . /app
 
 # Install the installer CLI system-wide
 RUN uv pip install --system -e .
 
-# Cloud variant: install JupyterLab
-RUN if [ "$VARIANT" = "cloud" ]; then \
+# Cloud variants: install JupyterLab
+RUN if [ "$VARIANT" = "cloud" ] || [ "$VARIANT" = "lite-cloud" ]; then \
       uv pip install --system jupyterlab; \
     fi
 
 USER 1000
 
-# Pre-install ComfyUI core (PyTorch, venv, requirements)
-RUN python -m src.cli install --path /app --type venv --yes --cuda cu130 --skip-nodes
+# Pre-install ComfyUI + PyTorch venv (standard/cloud only)
+# Lite variants SKIP this — PyTorch is installed at first runtime via entrypoint.
+RUN if [ "$VARIANT" = "standard" ] || [ "$VARIANT" = "cloud" ]; then \
+      python -m src.cli install --path /app --type venv --yes --cuda cu130 --skip-nodes; \
+    else \
+      echo "Lite variant — skipping pre-install (will install at first run)."; \
+    fi
 
-# Clean caches while still in builder stage
+# Clean caches
 USER 0
 RUN rm -rf /root/.cache/uv /root/.cache/pip /home/*/.cache/uv /home/*/.cache/pip /tmp/* \
     && find /app -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true \
     && find /app -name "*.pyc" -delete 2>/dev/null || true
 
-# ──────────────────────────────────────────────────────────────────
-# Stage 2: RUNTIME — slim image without build tools
-# ──────────────────────────────────────────────────────────────────
+# ── Stage 2: RUNTIME ─────────────────────────────────────────────
 FROM nvidia/cuda:13.0.2-runtime-ubuntu24.04
 
 ARG VARIANT=standard
 
-# Install ONLY runtime dependencies (no build-essential, no -dev packages)
+# Install ONLY runtime dependencies
 RUN apt-get update && apt-get install -y --no-install-recommends \
     python3.12 \
     python3.12-venv \
@@ -95,21 +104,21 @@ COPY --from=builder /root/.local/share/uv /root/.local/share/uv
 COPY --from=builder /usr/local/lib/python3.12 /usr/local/lib/python3.12
 COPY --from=builder /usr/lib/python3/dist-packages /usr/lib/python3/dist-packages
 
-# Copy the entire app (including pre-installed ComfyUI venv with PyTorch)
+# Copy the app (with or without pre-installed venv depending on variant)
 WORKDIR /app
 COPY --from=builder --chown=1000:1000 /app /app
 COPY --from=builder --chown=1000:1000 /data /data
 
-# Declare /data as a volume
+# Store the variant name so the entrypoint knows if first-run install is needed
+RUN echo "$VARIANT" > /app/.docker_variant
+
 VOLUME /data
 
 # Fix line endings and set executable
 RUN sed -i 's/\r$//' /app/entrypoint.sh && chmod +x /app/entrypoint.sh
 
-# Switch to non-root user
 USER 1000
 
-# Expose ComfyUI (8188) and JupyterLab (8888, cloud variant only)
 EXPOSE 8188 8888
 
 ENTRYPOINT ["/app/entrypoint.sh"]
