@@ -199,9 +199,22 @@ def download_file(
         log = get_logger()
 
     # Normalise to list
-    urls: list[str] = [url] if isinstance(url, str) else list(url)
-    if not urls:
+    _raw_urls: list[str] = [url] if isinstance(url, str) else list(url)
+    if not _raw_urls:
         raise RuntimeError("download_file: no URL provided.")
+
+    # Auto-generate ModelScope fallback for UmeAiRT assets if not already provided
+    urls: list[str] = []
+    for u in _raw_urls:
+        if u not in urls:
+            urls.append(u)
+        if "huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/" in u:
+            ms_fallback = u.replace(
+                "huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/",
+                "www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/"
+            )
+            if ms_fallback not in _raw_urls and ms_fallback not in urls:
+                urls.append(ms_fallback)
 
     # Skip if already exists (and no checksum to verify or checksum matches)
     aria2_control = dest.with_suffix(dest.suffix + ".aria2")

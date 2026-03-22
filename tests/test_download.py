@@ -46,3 +46,32 @@ class TestVerifyChecksum:
 
         expected = hashlib.sha256(b"").hexdigest()
         assert verify_checksum(test_file, expected) is True
+
+class TestDownloadFileFallback:
+    """Tests for auto fallback behaviors in download_file."""
+
+    def test_auto_modelscope_fallback(self, tmp_path: Path) -> None:
+        """UmeAiRT HF URLs automatically get MS fallback injected."""
+        from src.utils.download import download_file
+        from unittest.mock import patch, MagicMock
+
+        dest = tmp_path / "test.whl"
+        hf_url = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku.whl"
+        expected_ms = "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/whl/nunchaku.whl"
+
+        mock_httpx = MagicMock()
+        # Always fail to trigger all fallbacks
+        mock_httpx.side_effect = OSError("Download failed")
+
+        with patch("src.utils.download._find_aria2c", return_value=None), \
+             patch("src.utils.download._download_with_httpx", mock_httpx):
+            try:
+                download_file(hf_url, dest)
+            except RuntimeError:
+                pass
+
+        # httpx should have been called twice: once with HF, once with MS
+        assert mock_httpx.call_count == 2
+        calls = mock_httpx.call_args_list
+        assert calls[0][0][0] == hf_url
+        assert calls[1][0][0] == expected_ms
