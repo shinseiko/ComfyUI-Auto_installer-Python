@@ -59,12 +59,11 @@ def _build_info_text(install_path: Path) -> str:
 
     # GPU
     try:
-        from src.utils.gpu import get_gpu_vram_info, recommend_model_quality
+        from src.utils.gpu import get_gpu_vram_info
         gpu = get_gpu_vram_info()
         if gpu:
             lines.append(f"\n[b]GPU:[/b]       {gpu.name}")
             lines.append(f"[b]VRAM:[/b]      {gpu.vram_gib} GB")
-            lines.append(f"[b]Quality:[/b]   {recommend_model_quality(gpu.vram_gib)}")
         else:
             lines.append("\n[b]GPU:[/b]       [dim]Not detected[/dim]")
     except Exception:
