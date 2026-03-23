@@ -2,10 +2,12 @@
 Info Screen — Display system information.
 
 Queries the ComfyUI venv (if present) for accurate package info.
+Uses a background worker to avoid blocking the TUI during queries.
 """
 
 from __future__ import annotations
 
+import json
 import subprocess
 import sys
 from pathlib import Path
@@ -13,7 +15,7 @@ from typing import TYPE_CHECKING
 
 from textual.containers import Center, VerticalScroll
 from textual.screen import Screen
-from textual.widgets import Button, Footer, Header, Static
+from textual.widgets import Button, Footer, Header, LoadingIndicator, Static
 
 if TYPE_CHECKING:
     from textual.app import ComposeResult
@@ -65,11 +67,10 @@ print(json.dumps(info))
 
 
 def _count_custom_nodes(install_path: Path) -> int | None:
-    """Count installed custom nodes (directories in ComfyUI/custom_nodes/)."""
+    """Count installed custom nodes."""
     nodes_dir = install_path / "custom_nodes"
     if not nodes_dir.is_dir():
         return None
-    # Count subdirectories that look like nodes (have __init__.py or *.py)
     count = 0
     for child in nodes_dir.iterdir():
         if child.is_dir() and child.name not in ("__pycache__", ".git"):
@@ -102,7 +103,7 @@ def _get_disk_usage(install_path: Path) -> str | None:
         return None
     try:
         total = sum(f.stat().st_size for f in models_dir.rglob("*") if f.is_file())
-        if total > 1_073_741_824:  # > 1 GB
+        if total > 1_073_741_824:
             return f"{total / 1_073_741_824:.1f} GB"
         return f"{total / 1_048_576:.0f} MB"
     except Exception:
@@ -110,17 +111,16 @@ def _get_disk_usage(install_path: Path) -> str | None:
 
 
 def _build_info_text(install_path: Path) -> str:
-    """Build formatted system info string."""
+    """Build formatted system info string (runs in worker thread)."""
     lines = ["[b]ℹ️  System Information[/b]\n"]
 
     venv_python = _get_venv_python(install_path)
 
-    # ── Query all venv packages in one shot ──
+    # ── Query venv packages in one shot ──
     pkg_info: dict = {}
     if venv_python:
         raw = _query_venv(venv_python, _VENV_PACKAGES_SCRIPT)
         if raw:
-            import json
             try:
                 pkg_info = json.loads(raw)
             except json.JSONDecodeError:
@@ -147,7 +147,7 @@ def _build_info_text(install_path: Path) -> str:
     except Exception:
         lines.append("[b]GPU:[/b]            [dim]Detection unavailable[/dim]")
 
-    # ── ML Packages (from venv) ──
+    # ── ML Packages ──
     lines.append("\n[b]── ML Packages ──[/b]")
     if pkg_info.get("torch"):
         cuda_str = f" [green](CUDA {pkg_info['cuda']})[/green]" if pkg_info.get("cuda") else ""
@@ -157,19 +157,16 @@ def _build_info_text(install_path: Path) -> str:
     else:
         lines.append("[b]PyTorch:[/b]        [dim]No venv found[/dim]")
 
-    # SageAttention
     if pkg_info.get("sageattention"):
         lines.append(f"[b]SageAttention:[/b]  [green]{pkg_info['sageattention']}[/green]")
     elif venv_python:
         lines.append("[b]SageAttention:[/b]  [dim]Not installed[/dim]")
 
-    # Triton
     if pkg_info.get("triton"):
         lines.append(f"[b]Triton:[/b]         [green]{pkg_info['triton']}[/green]")
     elif venv_python:
         lines.append("[b]Triton:[/b]         [dim]Not installed[/dim]")
 
-    # xformers
     if pkg_info.get("xformers"):
         lines.append(f"[b]xformers:[/b]       [green]{pkg_info['xformers']}[/green]")
     elif venv_python:
@@ -189,7 +186,7 @@ def _build_info_text(install_path: Path) -> str:
         if models_size:
             lines.append(f"[b]Models:[/b]         {models_size}")
 
-    # ── System Tools ──
+    # ── Tools ──
     lines.append("\n[b]── Tools ──[/b]")
     try:
         from src.utils.commands import check_command_exists, get_command_version
@@ -206,7 +203,7 @@ def _build_info_text(install_path: Path) -> str:
 
 
 class InfoScreen(Screen):
-    """System information display."""
+    """System information display with async loading."""
 
     BINDINGS = [("escape", "app.back", "Back")]
 
@@ -215,13 +212,31 @@ class InfoScreen(Screen):
         self.install_path = install_path
 
     def compose(self) -> ComposeResult:
-        """Build the info layout."""
+        """Show loading state first."""
         yield Header(show_clock=True)
         with VerticalScroll(id="info-container"):
-            yield Static(_build_info_text(self.install_path), id="info-panel")
+            yield LoadingIndicator(id="info-loading")
+            yield Static("", id="info-panel")
             with Center():
                 yield Button("← Back", id="btn-back")
         yield Footer()
+
+    def on_mount(self) -> None:
+        """Start background data collection."""
+        self.run_worker(self._load_info, thread=True)
+
+    async def _load_info(self) -> None:
+        """Gather system info in a worker thread, then update UI."""
+        text = _build_info_text(self.install_path)
+        # Update UI from the worker
+        self.app.call_from_thread(self._display_info, text)
+
+    def _display_info(self, text: str) -> None:
+        """Replace loading indicator with the info text."""
+        loading = self.query_one("#info-loading", LoadingIndicator)
+        loading.display = False
+        panel = self.query_one("#info-panel", Static)
+        panel.update(text)
 
     def on_button_pressed(self, event: Button.Pressed) -> None:
         """Handle back button."""
