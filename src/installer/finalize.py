@@ -94,18 +94,15 @@ def create_launchers(
     *,
     cuda_tag: str | None = None,
 ) -> None:
-    """Generate cross-platform launcher and tool scripts.
+    """Generate cross-platform launcher and manager scripts.
 
     Creates:
 
     - **Performance launcher**: ``--use-sage-attention --auto-launch``
-      + interactive network mode prompt (local/open).
+      with listen address read from ``scripts/listen_address``.
     - **LowVRAM launcher**: same + ``--lowvram --disable-smart-memory --fp8``.
-    - **Tool scripts**: Model Downloader and Updater wrappers.
-
-    The ``--listen`` address is chosen by the user at launch time
-    via the prompt embedded in each launcher script (default: local
-    ``127.0.0.1``, option ``0.0.0.0`` for RunPod/cloud).
+    - **Manager script**: ``UmeAiRT-Manager`` — opens the TUI for
+      updates, model downloads, settings, and reinstall.
 
     On Windows, creates ``.bat`` files; on Linux/macOS ``.sh`` files
     with the executable bit set.
@@ -136,25 +133,17 @@ def create_launchers(
         else:
             _write_sh_launcher(install_path, name, mode_label, args, log)
 
-    # Tool scripts (model downloader, updater)
+    # Manager script (launches the TUI)
     if is_windows:
-        tools: list[tuple[str, str, str]] = [
-            ("UmeAiRT-Download-Models", "Model Downloader",
-             'umeairt-comfyui-installer download-models --path "%InstallPath%"'),
-            ("UmeAiRT-Update", "Updater",
-             'umeairt-comfyui-installer update --path "%InstallPath%"'),
-        ]
-        for tool_name, tool_label, tool_cmd in tools:
-            _write_bat_tool(install_path, tool_name, tool_label, tool_cmd, log)
+        _write_bat_tool(
+            install_path, "UmeAiRT-Manager", "UmeAiRT Manager",
+            'umeairt-comfyui-installer', log,
+        )
     else:
-        tools = [
-            ("UmeAiRT-Download-Models", "Model Downloader",
-             'umeairt-comfyui-installer download-models --path "$SCRIPT_DIR"'),
-            ("UmeAiRT-Update", "Updater",
-             'umeairt-comfyui-installer update --path "$SCRIPT_DIR"'),
-        ]
-        for tool_name, tool_label, tool_cmd in tools:
-            _write_sh_tool(install_path, tool_name, tool_label, tool_cmd, log)
+        _write_sh_tool(
+            install_path, "UmeAiRT-Manager", "UmeAiRT Manager",
+            'umeairt-comfyui-installer', log,
+        )
 
 
 def offer_model_downloads(
