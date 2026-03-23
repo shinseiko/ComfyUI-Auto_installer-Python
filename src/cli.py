@@ -41,13 +41,15 @@ def main() -> None:
 
         result = run_tui(install_path=install_path)
 
-        # If TUI returned a command name, run it in the terminal
+        # If TUI returned a command string, run it in the terminal
         if isinstance(result, str):
+            import shlex
             import subprocess
 
+            cmd_args = shlex.split(result)
             console.print(f"\n[dim]Running: umeairt-comfyui-installer {result} --path {install_path}[/dim]\n")
             subprocess.run(  # noqa: S603
-                [sys.executable, "-m", "src.cli", result, "--path", str(install_path)],
+                [sys.executable, "-m", "src.cli", *cmd_args, "--path", str(install_path)],
             )
         return
 

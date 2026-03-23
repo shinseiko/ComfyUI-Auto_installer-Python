@@ -244,7 +244,8 @@ class HomeScreen(Screen):
             self._run_cli_command("update")
 
         elif button_id == "btn-install":
-            self._run_cli_command("install")
+            from src.tui.screens.install import InstallScreen
+            self.app.push_screen(InstallScreen(self.install_path, self.user_settings))
 
     def _run_cli_command(self, command: str) -> None:
         """Exit TUI and run a CLI command in the terminal."""
