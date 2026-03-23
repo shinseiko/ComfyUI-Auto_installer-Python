@@ -230,41 +230,6 @@ jobs:
             & $python -m pip install -r $reqFile --quiet 2>&1 | ForEach-Object { Write-Host "  $_" }
           }
 
-          # Install Python dev headers (include/ + libs/) for C extension compilation
-          # The embedded Python doesn't ship with Python.h — needed by insightface etc.
-          $pyVer = & $python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
-          Write-Host "Installing Python $pyVer dev headers for C extension support..."
-          $nugetUrl = "https://www.nuget.org/api/v2/package/python/$pyVer"
-          $nupkgPath = "$env:TEMP\python_dev.nupkg"
-          $extractPath = "$env:TEMP\python_dev"
-          try {
-            Invoke-WebRequest -Uri $nugetUrl -OutFile $nupkgPath -UseBasicParsing
-            # NuGet packages are ZIP files but Expand-Archive requires .zip extension
-            $zipPath = "$env:TEMP\python_dev.zip"
-            Copy-Item $nupkgPath $zipPath -Force
-            Expand-Archive $zipPath -DestinationPath $extractPath -Force
-            Remove-Item $zipPath -Force -ErrorAction SilentlyContinue
-            $toolsDir = "$extractPath\tools"
-            # Copy contents (not the directory itself) to avoid nested include/include/
-            if (Test-Path "$toolsDir\include") {
-              New-Item -ItemType Directory -Force -Path "$env:PORTABLE\python_embeded\include" | Out-Null
-              Copy-Item "$toolsDir\include\*" "$env:PORTABLE\python_embeded\include\" -Recurse -Force
-              Write-Host "  ✓ include/ (Python.h) installed"
-            }
-            if (Test-Path "$toolsDir\libs") {
-              New-Item -ItemType Directory -Force -Path "$env:PORTABLE\python_embeded\libs" | Out-Null
-              Copy-Item "$toolsDir\libs\*" "$env:PORTABLE\python_embeded\libs\" -Recurse -Force
-              Write-Host "  ✓ libs/ (python3xx.lib) installed"
-            }
-          } catch {
-            Write-Host "  ⚠️ Failed to install dev headers: $_ (C extensions may fail)"
-          } finally {
-            Remove-Item $nupkgPath, $extractPath -Recurse -Force -ErrorAction SilentlyContinue
-          }
-
-          # Pre-install build dependencies needed by some packages (e.g. insightface)
-          Write-Host "Installing build dependencies..."
-          & $python -m pip install Cython wheel setuptools --quiet 2>&1 | Out-Null
 
           # Install additional standard packages from dependencies.json
           Write-Host "Installing standard packages..."
@@ -273,8 +238,9 @@ jobs:
           with open('installer/scripts/dependencies.json') as f:
               deps = json.load(f)
           pkgs = deps.get('pip_packages', {}).get('standard', [])
-          # Filter out cupy for CI (no GPU) and CUDA-only packages
-          pkgs = [p for p in pkgs if not p.startswith('cupy-cuda')]
+          # Filter out packages installed separately (pre-built wheels or no GPU)
+          skip = {'cupy-cuda13x', 'insightface'}  # insightface uses pre-built wheel from Assets
+          pkgs = [p for p in pkgs if p not in skip]
           print(' '.join(pkgs))
           "@ | ForEach-Object {
             if ($_ -and $_.Trim()) {
@@ -408,6 +374,48 @@ jobs:
                 Write-Host "  ✓ SageAttention installed and verified"
               } else {
                 Write-Host "  ⚠️ SageAttention install may have failed: $importCheck"
+              }
+            }
+          }
+
+      # ── Insightface pre-built wheel ─────────────────────────────────
+      - name: Install insightface (pre-built wheel)
+        shell: pwsh
+        continue-on-error: true
+        run: |
+          $python = "$env:PORTABLE\python_embeded\python.exe"
+          $pyVer = & $python -c "import sys; print(f'cp{sys.version_info.major}{sys.version_info.minor}')"
+
+          Write-Host "Looking for insightface wheel: $pyVer"
+
+          & $python -c @"
+          import urllib.request, json, sys
+          url = 'https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/tools_manifest.json'
+          try:
+              data = json.loads(urllib.request.urlopen(url, timeout=30).read())
+              entry = data.get('whl', {}).get('insightface', {}).get('files', {}).get('$pyVer')
+              if entry:
+                  filename = entry['filename']
+                  dl_url = f'https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/{filename}'
+                  print(f'WHEEL_URL={dl_url}')
+              else:
+                  print(f'No insightface wheel for $pyVer', file=sys.stderr)
+          except Exception as e:
+              print(f'Failed to fetch manifest: {e}', file=sys.stderr)
+          "@ | ForEach-Object {
+            if ($_ -match "^WHEEL_URL=(.+)$") {
+              $wheelUrl = $matches[1]
+              $wheelFilename = ($wheelUrl -split '/')[-1]
+              $wheelFile = "$env:TEMP\$wheelFilename"
+              Write-Host "Downloading insightface from: $wheelUrl"
+              Invoke-WebRequest -Uri $wheelUrl -OutFile $wheelFile -UseBasicParsing
+              & $python -m pip install $wheelFile --quiet
+              Remove-Item $wheelFile -Force -ErrorAction SilentlyContinue
+              $importCheck = & $python -c "import insightface; print('OK')" 2>&1
+              if ($importCheck -match "OK") {
+                Write-Host "  ✓ insightface installed and verified"
+              } else {
+                Write-Host "  ⚠️ insightface install may have failed: $importCheck"
               }
             }
           }
