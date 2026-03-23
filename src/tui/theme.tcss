@@ -192,6 +192,40 @@ Switch {
     background: $catppuccin-mantle;
 }
 
+/* ── Install Screen ─────────────────────────────────────────────── */
+#install-container {
+    layout: vertical;
+    align: center middle;
+    width: 100%;
+    height: 100%;
+}
+
+#install-title {
+    width: 64;
+    height: auto;
+    content-align: center middle;
+    text-align: center;
+    padding: 1 0;
+    margin: 1 0 0 0;
+    color: $catppuccin-mauve;
+}
+
+#install-form {
+    width: 64;
+    height: auto;
+    padding: 0;
+}
+
+#install-form Input {
+    width: 100%;
+    margin: 0 0 1 0;
+}
+
+#install-form Select {
+    width: 100%;
+    margin: 0 0 1 0;
+}
+
 /* ── Launch Screen ──────────────────────────────────────────────── */
 #launch-container {
     layout: vertical;
