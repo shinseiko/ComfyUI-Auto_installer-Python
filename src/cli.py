@@ -44,10 +44,11 @@ def main() -> None:
         # Handle TUI result
         if isinstance(result, dict) and result.get("action") == "launch":
             # Launch ComfyUI in foreground
-            import os
             import subprocess
 
-            os.system("cls" if sys.platform == "win32" else "clear")  # noqa: S605  # nosec B605
+            subprocess.run(  # noqa: S603 S607
+                ["cmd", "/c", "cls"] if sys.platform == "win32" else ["clear"],
+            )
             mode = result.get("mode", "normal")
             print(f"\n🚀 Starting ComfyUI ({mode} mode)...")
             print(f"   {' '.join(result['args'])}\n")

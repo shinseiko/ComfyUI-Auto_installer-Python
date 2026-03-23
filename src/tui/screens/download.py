@@ -17,22 +17,15 @@ from textual.containers import Center, Vertical, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, LoadingIndicator, Static
 
+from src.tui.helpers import detect_vram
+
 if TYPE_CHECKING:
     from pathlib import Path
 
     from textual.app import ComposeResult
 
 
-def _detect_vram() -> float | None:
-    """Detect GPU VRAM in GiB."""
-    try:
-        from src.utils.gpu import get_gpu_vram_info
-        gpu = get_gpu_vram_info()
-        if gpu:
-            return gpu.vram_gib
-    except Exception:
-        pass
-    return None
+
 
 
 def _find_catalog(install_path: Path) -> Path | None:
@@ -62,7 +55,7 @@ class DownloadScreen(Screen):
     def __init__(self, install_path: Path, **kwargs) -> None:
         super().__init__(**kwargs)
         self.install_path = install_path
-        self.vram_gib = _detect_vram()
+        self.vram_gib = detect_vram()
         self.catalog = None
         self.selected_bundle_key: str | None = None
         self._button_ids: list[str] = []

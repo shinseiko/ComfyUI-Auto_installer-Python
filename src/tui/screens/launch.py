@@ -16,22 +16,15 @@ from textual.containers import Center, Horizontal, Vertical
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Select, Static, Switch
 
+from src.tui.helpers import detect_vram, get_venv_python
+
 if TYPE_CHECKING:
     from textual.app import ComposeResult
 
     from src.settings import UserSettings
 
 
-def _detect_vram() -> float | None:
-    """Detect GPU VRAM in GiB."""
-    try:
-        from src.utils.gpu import get_gpu_vram_info
-        gpu = get_gpu_vram_info()
-        if gpu:
-            return gpu.vram_gib
-    except Exception:
-        pass
-    return None
+
 
 
 def _recommend_mode(vram_gib: float | None) -> str:
@@ -90,7 +83,7 @@ class LaunchScreen(Screen):
         super().__init__(**kwargs)
         self.install_path = install_path
         self.user_settings = settings
-        self.vram_gib = _detect_vram()
+        self.vram_gib = detect_vram()
         self.recommended = _recommend_mode(self.vram_gib)
 
     def compose(self) -> ComposeResult:
@@ -237,13 +230,10 @@ class LaunchScreen(Screen):
             return
 
         # Find Python: venv first, then embedded, then system
-        venv_python = self.install_path / "scripts" / "venv"
-        if sys.platform == "win32":
-            python_exe = venv_python / "Scripts" / "python.exe"
+        venv_python = get_venv_python(self.install_path)
+        if venv_python:
+            python_exe = venv_python
         else:
-            python_exe = venv_python / "bin" / "python"
-
-        if not python_exe.exists():
             embedded = self.install_path / "python_embeded" / "python.exe"
             python_exe = embedded if embedded.exists() else Path(sys.executable)
 

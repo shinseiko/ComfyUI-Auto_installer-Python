@@ -17,20 +17,12 @@ from textual.containers import Center, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, LoadingIndicator, Static
 
+from src.tui.helpers import get_venv_python
+
 if TYPE_CHECKING:
     from pathlib import Path
 
     from textual.app import ComposeResult
-
-
-def _get_venv_python(install_path: Path) -> Path | None:
-    """Find the ComfyUI venv Python executable."""
-    # Venv is at install_path/scripts/venv/ (see environment.py)
-    if sys.platform == "win32":
-        venv_python = install_path / "scripts" / "venv" / "Scripts" / "python.exe"
-    else:
-        venv_python = install_path / "scripts" / "venv" / "bin" / "python"
-    return venv_python if venv_python.exists() else None
 
 
 def _query_venv(venv_python: Path, code: str) -> str | None:
@@ -116,7 +108,7 @@ def _build_info_text(install_path: Path) -> str:
     """Build formatted system info string (runs in worker thread)."""
     lines = ["[b]ℹ️  System Information[/b]\n"]
 
-    venv_python = _get_venv_python(install_path)
+    venv_python = get_venv_python(install_path)
 
     # ── Query venv packages in one shot ──
     pkg_info: dict = {}

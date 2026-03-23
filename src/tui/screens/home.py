@@ -9,6 +9,7 @@ Detects whether ComfyUI is installed to adjust available actions.
 from __future__ import annotations
 
 import sys
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from textual.binding import Binding
@@ -16,20 +17,23 @@ from textual.containers import Center, VerticalScroll
 from textual.screen import Screen
 from textual.widgets import Button, Footer, Header, Static
 
-if TYPE_CHECKING:
-    from pathlib import Path
+from src.tui.helpers import get_venv_python
 
+if TYPE_CHECKING:
     from textual.app import ComposeResult
 
     from src.settings import UserSettings
 
 # ── ASCII Art Logo ──────────────────────────────────────────────────
-LOGO = r"""
- ╦ ╦┌┬┐┌─┐╔═╗┬╦═╗╔╦╗
- ║ ║│││├┤ ╠═╣│╠╦╝ ║
- ╚═╝┴ ┴└─┘╩ ╩┴╩╚═ ╩
-  ── ComfyUI ──
-"""
+_LOGO_FALLBACK = "UmeAiRT — ComfyUI Installer"
+
+
+def _load_logo() -> str:
+    """Load the ASCII banner, with a plain-text fallback."""
+    banner = Path(__file__).resolve().parent.parent.parent.parent / "scripts" / "banner.txt"
+    if banner.exists():
+        return banner.read_text(encoding="utf-8")
+    return _LOGO_FALLBACK
 
 
 def _get_system_summary(install_path: Path) -> str:
@@ -56,13 +60,8 @@ def _get_venv_torch_version(install_path: Path) -> str | None:
     """Query the ComfyUI venv for its PyTorch version."""
     import subprocess
 
-    # Venv is at install_path/scripts/venv/ (see environment.py)
-    if sys.platform == "win32":
-        venv_python = install_path / "scripts" / "venv" / "Scripts" / "python.exe"
-    else:
-        venv_python = install_path / "scripts" / "venv" / "bin" / "python"
-
-    if not venv_python.exists():
+    venv_python = get_venv_python(install_path)
+    if venv_python is None:
         return None
 
     try:
@@ -84,9 +83,6 @@ def _is_comfyui_installed(install_path: Path) -> bool:
 
 class HomeScreen(Screen):
     """Main menu screen."""
-
-    # Buttons list is built dynamically in on_mount based on install state
-    _menu_buttons: list[str] = []
 
     BINDINGS = [
         Binding("1", "menu_1", show=False),
@@ -113,13 +109,14 @@ class HomeScreen(Screen):
         super().__init__(**kwargs)
         self.install_path = install_path
         self.user_settings = settings
+        self._menu_buttons: list[str] = []
         self.comfyui_installed = _is_comfyui_installed(install_path)
 
     def compose(self) -> ComposeResult:
         """Build the home screen layout."""
         yield Header(show_clock=True)
         with VerticalScroll(id="home-container"):
-            yield Static(LOGO, id="logo-panel")
+            yield Static(_load_logo(), id="logo-panel")
 
             if self.comfyui_installed:
                 yield Static(_get_system_summary(self.install_path), id="system-info-bar")

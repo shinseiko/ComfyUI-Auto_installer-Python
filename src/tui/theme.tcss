@@ -151,7 +151,6 @@ FooterKey {
     text-style: dim;
 }
 
-/* ── Settings Screen ────────────────────────────────────────────── */
 /* ── Launch Options ─────────────────────────────────────────────── */
 .launch-options-row {
     width: auto;
