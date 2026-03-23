@@ -3,6 +3,7 @@ Home Screen — Main menu for UmeAiRT ComfyUI TUI.
 
 Shows the logo, system info bar, and action buttons.
 Supports mouse clicks, Tab navigation, and number key shortcuts.
+Detects whether ComfyUI is installed to adjust available actions.
 """
 
 from __future__ import annotations
@@ -35,7 +36,6 @@ MENU_BUTTONS = [
     "btn-download",
     "btn-update",
     "btn-install",
-    "btn-scan",
     "btn-info",
     "btn-settings",
     "btn-exit",
@@ -63,6 +63,11 @@ def _get_system_summary() -> str:
     return "  │  ".join(parts)
 
 
+def _is_comfyui_installed(install_path: Path) -> bool:
+    """Check if ComfyUI is installed at the given path."""
+    return (install_path / "ComfyUI" / "main.py").exists()
+
+
 class HomeScreen(Screen):
     """Main menu screen."""
 
@@ -71,10 +76,9 @@ class HomeScreen(Screen):
         Binding("2", "menu_2", "Download", show=False),
         Binding("3", "menu_3", "Update", show=False),
         Binding("4", "menu_4", "Install", show=False),
-        Binding("5", "menu_5", "Scan", show=False),
-        Binding("6", "menu_6", "Info", show=False),
-        Binding("7", "menu_7", "Settings", show=False),
-        Binding("8", "menu_8", "Exit", show=False),
+        Binding("5", "menu_5", "Info", show=False),
+        Binding("6", "menu_6", "Settings", show=False),
+        Binding("7", "menu_7", "Exit", show=False),
         Binding("up", "move_up", "Up", show=False, priority=True),
         Binding("down", "move_down", "Down", show=False, priority=True),
         Binding("k", "move_up", show=False),
@@ -91,67 +95,77 @@ class HomeScreen(Screen):
         super().__init__(**kwargs)
         self.install_path = install_path
         self.user_settings = settings
+        self.comfyui_installed = _is_comfyui_installed(install_path)
 
     def compose(self) -> ComposeResult:
         """Build the home screen layout."""
         yield Header(show_clock=True)
         with VerticalScroll(id="home-container"):
             yield Static(LOGO, id="logo-panel")
-            yield Static(_get_system_summary(), id="system-info-bar")
+
+            if self.comfyui_installed:
+                yield Static(_get_system_summary(), id="system-info-bar")
+            else:
+                yield Static(
+                    "[bold yellow]⚠ ComfyUI not detected[/] — Run Install first",
+                    id="system-info-bar",
+                )
 
             with Center(id="menu-container"):
                 yield Button(
                     "1 │ 🚀  Launch ComfyUI",
                     id="btn-launch",
                     classes="menu-button -primary",
+                    disabled=not self.comfyui_installed,
                 )
                 yield Button(
                     "2 │ ⬇️   Download Models",
                     id="btn-download",
                     classes="menu-button",
+                    disabled=not self.comfyui_installed,
                 )
                 yield Button(
                     "3 │ 🔄  Update ComfyUI + Nodes",
                     id="btn-update",
                     classes="menu-button",
+                    disabled=not self.comfyui_installed,
                 )
                 yield Button(
                     "4 │ 🔧  Install (first-time setup)",
                     id="btn-install",
-                    classes="menu-button",
+                    classes="menu-button" if self.comfyui_installed else "menu-button -primary",
                 )
                 yield Button(
-                    "5 │ 🔍  Scan Models (security)",
-                    id="btn-scan",
-                    classes="menu-button",
-                )
-                yield Button(
-                    "6 │ ℹ️   System Info",
+                    "5 │ ℹ️   System Info",
                     id="btn-info",
                     classes="menu-button",
                 )
                 yield Button(
-                    "7 │ ⚙️   Settings",
+                    "6 │ ⚙️   Settings",
                     id="btn-settings",
                     classes="menu-button",
                 )
                 yield Button(
-                    "8 │ ❌  Exit",
+                    "7 │ ❌  Exit",
                     id="btn-exit",
                     classes="menu-button -danger",
                 )
         yield Footer()
 
     def on_mount(self) -> None:
-        """Focus the first button on mount."""
-        self.query_one("#btn-launch", Button).focus()
+        """Focus the appropriate button on mount."""
+        if self.comfyui_installed:
+            self.query_one("#btn-launch", Button).focus()
+        else:
+            self.query_one("#btn-install", Button).focus()
 
     # ── Number key shortcuts ────────────────────────────────────────
     def _press_button(self, index: int) -> None:
         """Simulate pressing a button by index."""
         if 0 <= index < len(MENU_BUTTONS):
             btn = self.query_one(f"#{MENU_BUTTONS[index]}", Button)
-            btn.press()
+            if not btn.disabled:
+                btn.press()
 
     def action_menu_1(self) -> None:
         self._press_button(0)
@@ -173,9 +187,6 @@ class HomeScreen(Screen):
 
     def action_menu_7(self) -> None:
         self._press_button(6)
-
-    def action_menu_8(self) -> None:
-        self._press_button(7)
 
     # ── Arrow key navigation ────────────────────────────────────────
     def _get_focused_index(self) -> int:
@@ -200,7 +211,7 @@ class HomeScreen(Screen):
     def action_press_focused(self) -> None:
         """Press the currently focused button."""
         focused = self.focused
-        if isinstance(focused, Button):
+        if isinstance(focused, Button) and not focused.disabled:
             focused.press()
 
     # ── Button handlers ─────────────────────────────────────────────
@@ -234,9 +245,6 @@ class HomeScreen(Screen):
 
         elif button_id == "btn-install":
             self._run_cli_command("install")
-
-        elif button_id == "btn-scan":
-            self._run_cli_command("scan-models")
 
     def _run_cli_command(self, command: str) -> None:
         """Exit TUI and run a CLI command in the terminal."""

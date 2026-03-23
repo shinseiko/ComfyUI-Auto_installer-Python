@@ -144,6 +144,13 @@ FooterKey {
     border: tall $catppuccin-red;
 }
 
+.menu-button:disabled {
+    background: $catppuccin-surface0 50%;
+    color: $catppuccin-overlay0;
+    border: tall $catppuccin-surface0;
+    text-style: dim;
+}
+
 /* ── Settings Screen ────────────────────────────────────────────── */
 #settings-container {
     layout: vertical;
