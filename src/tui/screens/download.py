@@ -95,21 +95,21 @@ class DownloadScreen(Screen):
         content.remove_children()
 
         if not self.catalog or not self.catalog.bundles:
-            content.mount(Static(
+            content.mount(Center(Static(
                 "[yellow]⚠ No model catalog found.[/]\n\n"
                 "[dim]Place model_manifest.json in scripts/ folder.[/dim]"
-            ))
+            )))
             content.mount(Center(Button("← Back", id="btn-back", classes="menu-button")))
             self._button_ids = ["btn-back"]
             return
 
         vram_str = f"{self.vram_gib:.0f} GB" if self.vram_gib else "unknown"
-        content.mount(Static(
+        content.mount(Center(Static(
             f"⬇️ [b]Model Downloader[/b]\n\n"
             f"[b]GPU VRAM:[/b] {vram_str}  •  "
             f"[dim]Select a model to download[/dim]",
             classes="dl-title",
-        ))
+        )))
 
         self._button_ids = []
 
@@ -124,7 +124,7 @@ class DownloadScreen(Screen):
             family_meta = self.catalog.families.get(family_name)
             display = family_meta.display_name if family_meta and family_meta.display_name else family_name
             desc = f"  [dim]{family_meta.description}[/dim]" if family_meta and family_meta.description else ""
-            content.mount(Static(f"\n[b]{display}[/b]{desc}"))
+            content.mount(Center(Static(f"\n[b]{display}[/b]{desc}", classes="dl-family-header")))
 
             for bkey in bundle_keys:
                 bundle = self.catalog.bundles[bkey]
@@ -135,17 +135,15 @@ class DownloadScreen(Screen):
                 self._id_to_key[btn_id] = bkey
                 self._button_ids.append(btn_id)
 
-                content.mount(Button(
+                content.mount(Center(Button(
                     f"  {model_name}{btn_type}  —  {variant_count} variant{'s' if variant_count > 1 else ''}",
                     id=btn_id,
                     classes="menu-button",
-                ))
+                )))
 
         self._button_ids.append("btn-back")
         content.mount(Static(""))
-        c = Center()
-        content.mount(c)
-        c.mount(Button("← Back", id="btn-back", classes="menu-button"))
+        content.mount(Center(Button("← Back", id="btn-back", classes="menu-button")))
 
         # Focus first bundle button
         if self._button_ids:
@@ -164,11 +162,11 @@ class DownloadScreen(Screen):
         model_name = bundle_key.split("/", 1)[-1] if "/" in bundle_key else bundle_key
         family = bundle_key.split("/")[0] if "/" in bundle_key else ""
 
-        content.mount(Static(
+        content.mount(Center(Static(
             f"⬇️ [b]{family} — {model_name}[/b]\n\n"
             f"[dim]Choose a quality variant to download[/dim]",
             classes="dl-title",
-        ))
+        )))
 
         self._button_ids = []
 
@@ -193,19 +191,17 @@ class DownloadScreen(Screen):
             self._id_to_key[btn_id] = vname
             self._button_ids.append(btn_id)
 
-            content.mount(Button(
+            content.mount(Center(Button(
                 f"  {vname}  —  {file_count} file{'s' if file_count > 1 else ''}, "
                 f"~{size_str}{vram_tag}",
                 id=btn_id,
                 classes="menu-button",
-            ))
+            )))
 
         # Back button
         self._button_ids.append("btn-var-back")
         content.mount(Static(""))
-        c = Center()
-        content.mount(c)
-        c.mount(Button("← Back to bundles", id="btn-var-back", classes="menu-button"))
+        content.mount(Center(Button("← Back to bundles", id="btn-var-back", classes="menu-button")))
 
         if self._button_ids:
             try:
