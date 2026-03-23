@@ -210,9 +210,12 @@ class LaunchScreen(Screen):
 
         args.extend(self.user_settings.build_comfyui_args())
 
-        # Exit TUI and launch
+        # Exit TUI and run ComfyUI in foreground (Ctrl+C works)
         self.app.exit()
-        subprocess.Popen(  # noqa: S603
-            args,
-            cwd=str(self.install_path),
-        )
+        print(f"\n🚀 Starting ComfyUI ({mode} mode)...")
+        print(f"   {' '.join(args)}\n")
+        print("   Press Ctrl+C to stop.\n")
+        try:
+            subprocess.run(args, cwd=str(self.install_path))  # noqa: S603
+        except KeyboardInterrupt:
+            print("\n\n⏹️  ComfyUI stopped.")
