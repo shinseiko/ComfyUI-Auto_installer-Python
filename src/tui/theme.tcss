@@ -192,6 +192,28 @@ Switch {
     background: $catppuccin-mantle;
 }
 
+/* ── Download Screen ────────────────────────────────────────────── */
+#download-container {
+    width: 100%;
+    height: 100%;
+}
+
+#dl-content {
+    width: 100%;
+    height: auto;
+    align: center top;
+}
+
+#dl-title {
+    width: 70;
+    height: auto;
+    content-align: center middle;
+    text-align: center;
+    padding: 1 0;
+    margin: 1 0 0 0;
+    color: $catppuccin-blue;
+}
+
 /* ── Install Screen ─────────────────────────────────────────────── */
 #install-container {
     layout: vertical;
