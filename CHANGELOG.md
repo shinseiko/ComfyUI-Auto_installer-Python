@@ -5,6 +5,36 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.0] — TUI Manager & Launcher Consolidation
+
+### Added
+
+- **TUI Manager** — Full terminal UI (`umeairt-comfyui-installer` with no subcommand) built with Textual, featuring:
+  - **Home screen** — Detect installed ComfyUI, show Launch / Update / Download / Reinstall / Info options.
+  - **Launch screen** — VRAM mode selector (Performance / Normal / Low) with GPU VRAM auto-detection, listen address, SageAttention toggle, auto-browser toggle — all on a single row.
+  - **Download screen** — Interactive model bundle browser with variant selection and progress tracking.
+  - **Install screen** — Path input and environment type selection for fresh installs.
+  - **Info screen** — System info display (GPU, Python, installed packages).
+- **`UserSettings` model** (`src/settings.py`) — Persistent JSON-based user preferences for listen address, VRAM mode, SageAttention, auto-browser, and extra args.
+- **`--reinstall` flag** — Clean reinstall option that preserves models and output data.
+- **`UmeAiRT-Manager` script** — Single launcher replacing `UmeAiRT-Update` + `UmeAiRT-Download-Models` scripts. Opens the TUI manager.
+- **23 new tests** for `UserSettings` — defaults, save/load round-trip, corrupt file handling, all VRAM modes, DirectML detection, extra args.
+
+### Changed
+
+- **Launcher consolidation** — 4 generated scripts → 3: Performance, LowVRAM, Manager (one entry point for update, download, reinstall, settings).
+- **Settings merged into Launcher** — Listen address, SageAttention, and auto-browser settings moved from a separate Settings screen into the Launch screen.
+- **Portable bundle** — `UmeAiRT-Download-Models.bat` replaced by `UmeAiRT-Manager.bat` (launches TUI).
+- **Coverage** — `src/tui/*` excluded from CI coverage (interactive terminal widgets). Total coverage maintained at 70%+.
+- **416 tests** — up from 393 (all passing).
+
+### Fixed
+
+- **20 ruff lint errors** in TUI files (TC003, F401, SIM105, SIM117, E501).
+- **3 bandit warnings** — `# nosec B104` for user-chosen `0.0.0.0` bind address, `# nosec B605` for static `os.system("cls")`.
+- **Stale imports** — Removed `SettingsScreen` import and F2 binding from `app.py`.
+- **Test failures** — Updated tool script count (2→1), network prompt test, snapshot tests.
+
 ## [5.0.0] — Stable Release
 
 ### Changed
