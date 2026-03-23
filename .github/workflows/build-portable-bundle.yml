@@ -566,20 +566,19 @@ jobs:
           & $python -c @"
           from modelscope.hub.api import HubApi
           import os
-          api = HubApi()
+          endpoint = os.environ.get('MS_ENDPOINT', 'https://www.modelscope.ai')
+          api = HubApi(endpoint=endpoint)
           api.login(os.environ['MODELSCOPE_API_TOKEN'])
           bundle = os.environ['BUNDLE_PATH']
           name = os.environ['BUNDLE_NAME']
           repo = os.environ.get('MS_REPO', 'UmeAiRT/ComfyUI-Auto-Installer-Assets')
           dist_dir = os.environ.get('DIST_DIR', 'distributions')
-          endpoint = os.environ.get('MS_ENDPOINT', 'https://www.modelscope.ai')
-          print(f'Uploading {name} to ModelScope ({repo})...')
+          print(f'Uploading {name} to ModelScope ({repo} via {endpoint})...')
           api.upload_file(
               path_or_fileobj=bundle,
               path_in_repo=f'{dist_dir}/{name}',
               repo_id=repo,
               repo_type='dataset',
-              endpoint=endpoint,
               commit_message=f'CI: Upload portable bundle {name}',
           )
           print('[OK] Uploaded to ModelScope!')
@@ -719,15 +718,14 @@ jobs:
           # ── Upload to ModelScope ───────────────────────────────────
           try:
               from modelscope.hub.api import HubApi
-              ms_api = HubApi()
+              ms_api = HubApi(endpoint=ms_endpoint)
               ms_api.login(os.environ["MODELSCOPE_API_TOKEN"])
-              print(f"Uploading manifest to ModelScope ({ms_repo})...")
+              print(f"Uploading manifest to ModelScope ({ms_repo} via {ms_endpoint})...")
               ms_api.upload_file(
                   path_or_fileobj=manifest_path,
                   path_in_repo=manifest_name,
                   repo_id=ms_repo,
                   repo_type="dataset",
-                  endpoint=ms_endpoint,
                   commit_message=f"CI: Update distributions manifest — {bundle_key}",
               )
               print("[OK] Manifest uploaded to ModelScope!")
