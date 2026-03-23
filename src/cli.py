@@ -73,6 +73,51 @@ def main() -> None:
     app()
 
 
+def _clean_for_reinstall(path: Path) -> None:
+    """Remove ComfyUI and venv for clean reinstall, preserving user data.
+
+    Preserved directories: models, output, input, custom_nodes, user,
+    scripts, logs. Everything else (ComfyUI/, scripts/venv/) is removed.
+    """
+    import shutil
+
+    path = Path(str(path).strip('"')).resolve()
+    if not path.exists():
+        return
+
+    console.print("[bold yellow]♻️  Clean Reinstall[/bold yellow]")
+    console.print(f"[dim]   Path: {path}[/dim]\n")
+
+    # Directories with user data to preserve
+    preserve = {"models", "output", "input", "custom_nodes", "user", "scripts", "logs"}
+
+    # 1. Remove ComfyUI directory (the git repo)
+    comfy_dir = path / "ComfyUI"
+    if comfy_dir.exists():
+        console.print("   [dim]Removing ComfyUI...[/dim]")
+        shutil.rmtree(comfy_dir, ignore_errors=True)
+
+    # 2. Remove venv (will be recreated by install)
+    venv_dir = path / "scripts" / "venv"
+    if venv_dir.exists():
+        console.print("   [dim]Removing venv...[/dim]")
+        shutil.rmtree(venv_dir, ignore_errors=True)
+
+    # 3. Remove install marker so fresh install doesn't think it's partial
+    marker = path / ".install_in_progress"
+    marker.unlink(missing_ok=True)
+
+    # 4. Remove other non-user files (launchers, etc.)
+    for child in path.iterdir():
+        if child.name in preserve:
+            continue
+        if child.name == "ComfyUI":
+            continue  # already handled
+        if child.is_file() and child.suffix in (".bat", ".sh", ".ps1"):
+            child.unlink(missing_ok=True)
+
+    console.print("   [green]✓ Cleaned. Starting fresh install...[/green]\n")
+
 
 def _clean_path(p: Path) -> Path:
     """Strip stray quotes that Windows batch files may leave in paths."""
@@ -116,12 +161,20 @@ def install(
         "--skip-nodes",
         help="Skip custom node installation (useful for Docker builds where nodes are handled at runtime).",
     ),
+    reinstall: bool = typer.Option(
+        False,
+        "--reinstall",
+        help="Clean reinstall: removes ComfyUI and venv but preserves user data (models, custom nodes, output).",
+    ),
 ) -> None:
     """Install ComfyUI with all dependencies and custom nodes."""
     from src.installer.install import run_install
 
-    if yes:
+    if yes or reinstall:
         set_non_interactive()
+
+    if reinstall:
+        _clean_for_reinstall(path)
 
     # Validate enum values early
     try:
