@@ -1,7 +1,8 @@
 """
 CLI entry point for the ComfyUI Auto-Installer.
 
-Provides commands: install, update, download-models, info.
+Provides commands: install, update, download-models, info, scan-models.
+When run without arguments, launches the interactive TUI.
 Uses Typer for a clean, auto-documented CLI interface.
 """
 
@@ -21,9 +22,37 @@ from src.utils.prompts import set_non_interactive
 app = typer.Typer(
     name="umeairt-comfyui-installer",
     help="Cross-platform automated installer for ComfyUI.",
-    no_args_is_help=True,
+    no_args_is_help=False,
     rich_markup_mode="rich",
+    invoke_without_command=True,
 )
+
+
+@app.callback(invoke_without_command=True)
+def main(
+    ctx: typer.Context,
+    path: Path = typer.Option(
+        Path.cwd(),
+        "--path", "-p",
+        help="Installation directory for ComfyUI.",
+    ),
+) -> None:
+    """UmeAiRT ComfyUI — Interactive installer and launcher."""
+    if ctx.invoked_subcommand is not None:
+        return
+
+    from src.tui.app import run_tui
+
+    result = run_tui(install_path=path)
+
+    # If TUI returned a command name, run it in the terminal
+    if isinstance(result, str):
+        import subprocess
+
+        console.print(f"\n[dim]Running: umeairt-comfyui-installer {result} --path {path}[/dim]\n")
+        subprocess.run(  # noqa: S603
+            [sys.executable, "-m", "umeairt_comfyui_installer", result, "--path", str(path)],
+        )
 
 
 def _clean_path(p: Path) -> Path:

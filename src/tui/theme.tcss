@@ -1,0 +1,183 @@
+/* UmeAiRT ComfyUI TUI Theme
+ * Deep purple + cyan palette for AI artists
+ */
+
+/* ── Global ─────────────────────────────────────────────────────── */
+Screen {
+    background: $surface;
+}
+
+/* ── Header / Footer ────────────────────────────────────────────── */
+Header {
+    background: $primary-darken-3;
+    color: $text;
+    dock: top;
+    height: 1;
+}
+
+Footer {
+    background: $primary-darken-3;
+}
+
+/* ── Home Screen ────────────────────────────────────────────────── */
+#home-container {
+    layout: vertical;
+    align: center middle;
+    width: 100%;
+    height: 100%;
+}
+
+#logo-panel {
+    width: 64;
+    height: auto;
+    content-align: center middle;
+    text-align: center;
+    padding: 1 2;
+    margin: 1 0;
+    border: heavy $accent;
+    background: $primary-darken-2;
+}
+
+#system-info-bar {
+    width: 64;
+    height: 3;
+    content-align: center middle;
+    text-align: center;
+    margin: 0 0 1 0;
+    color: $text-muted;
+}
+
+#menu-container {
+    width: 64;
+    height: auto;
+    align: center middle;
+}
+
+.menu-button {
+    width: 60;
+    height: 3;
+    margin: 0 2 0 2;
+    content-align: center middle;
+    text-align: center;
+    background: $primary-darken-1;
+    color: $text;
+    border: tall $primary-lighten-1;
+}
+
+.menu-button:hover {
+    background: $accent;
+    color: $text;
+    border: tall $accent-lighten-1;
+}
+
+.menu-button:focus {
+    background: $accent;
+    color: $text;
+    border: tall $accent-lighten-2;
+    text-style: bold;
+}
+
+.menu-button.-primary {
+    background: $success-darken-1;
+    border: tall $success;
+}
+
+.menu-button.-primary:hover {
+    background: $success;
+}
+
+.menu-button.-primary:focus {
+    background: $success;
+    border: tall $success-lighten-1;
+}
+
+.menu-button.-danger {
+    background: $error-darken-2;
+    border: tall $error-darken-1;
+}
+
+.menu-button.-danger:hover {
+    background: $error-darken-1;
+}
+
+/* ── Settings Screen ────────────────────────────────────────────── */
+#settings-container {
+    layout: vertical;
+    align: center middle;
+    width: 100%;
+    height: 100%;
+}
+
+#settings-panel {
+    width: 70;
+    height: auto;
+    padding: 1 2;
+    border: heavy $accent;
+    background: $primary-darken-2;
+}
+
+.setting-row {
+    layout: horizontal;
+    height: 3;
+    margin: 0 1;
+}
+
+.setting-label {
+    width: 1fr;
+    content-align: left middle;
+    padding: 0 1;
+}
+
+.setting-value {
+    width: 1fr;
+    content-align: right middle;
+    padding: 0 1;
+}
+
+/* ── Info Screen ────────────────────────────────────────────────── */
+#info-container {
+    layout: vertical;
+    align: center middle;
+    width: 100%;
+    height: 100%;
+}
+
+#info-panel {
+    width: 70;
+    height: auto;
+    padding: 1 2;
+    border: heavy $accent;
+    background: $primary-darken-2;
+}
+
+/* ── Launch Screen ──────────────────────────────────────────────── */
+#launch-container {
+    layout: vertical;
+    align: center middle;
+    width: 100%;
+    height: 100%;
+}
+
+#launch-panel {
+    width: 70;
+    height: auto;
+    padding: 1 2;
+    border: heavy $accent;
+    background: $primary-darken-2;
+}
+
+#launch-button {
+    width: 100%;
+    height: 5;
+    margin: 1 0;
+    content-align: center middle;
+    text-align: center;
+    background: $success;
+    color: $text;
+    border: heavy $success-lighten-1;
+    text-style: bold;
+}
+
+#launch-button:hover {
+    background: $success-lighten-1;
+}
