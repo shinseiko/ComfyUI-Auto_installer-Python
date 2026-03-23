@@ -21,14 +21,14 @@ from src.utils.prompts import set_non_interactive
 
 app = typer.Typer(
     name="umeairt-comfyui-installer",
-    help="Cross-platform automated installer for ComfyUI.",
+    help="UmeAiRT ComfyUI — Interactive installer and launcher.",
     no_args_is_help=False,
     rich_markup_mode="rich",
     invoke_without_command=True,
 )
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def main(
     ctx: typer.Context,
     path: Path = typer.Option(
@@ -53,6 +53,7 @@ def main(
         subprocess.run(  # noqa: S603
             [sys.executable, "-m", "umeairt_comfyui_installer", result, "--path", str(path)],
         )
+
 
 
 def _clean_path(p: Path) -> Path:
