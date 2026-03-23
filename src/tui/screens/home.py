@@ -75,9 +75,11 @@ class HomeScreen(Screen):
         Binding("6", "menu_6", "Info", show=False),
         Binding("7", "menu_7", "Settings", show=False),
         Binding("8", "menu_8", "Exit", show=False),
-        Binding("up,k", "focus_previous", "Up", show=False),
-        Binding("down,j", "focus_next", "Down", show=False),
-        Binding("enter", "press_focused", "Select", show=False),
+        Binding("up", "focus_previous", "Up", show=False, priority=True),
+        Binding("down", "focus_next", "Down", show=False, priority=True),
+        Binding("k", "focus_previous", "Up", show=False),
+        Binding("j", "focus_next", "Down", show=False),
+        Binding("enter", "press_focused", "Select", show=False, priority=True),
     ]
 
     def __init__(
