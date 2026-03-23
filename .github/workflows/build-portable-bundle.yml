@@ -230,6 +230,31 @@ jobs:
             & $python -m pip install -r $reqFile --quiet 2>&1 | ForEach-Object { Write-Host "  $_" }
           }
 
+          # Install Python dev headers (include/ + libs/) for C extension compilation
+          # The embedded Python doesn't ship with Python.h — needed by insightface etc.
+          $pyVer = & $python -c "import sys; print(f'{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}')"
+          Write-Host "Installing Python $pyVer dev headers for C extension support..."
+          $nugetUrl = "https://www.nuget.org/api/v2/package/python/$pyVer"
+          $nupkgPath = "$env:TEMP\python_dev.nupkg"
+          $extractPath = "$env:TEMP\python_dev"
+          try {
+            Invoke-WebRequest -Uri $nugetUrl -OutFile $nupkgPath -UseBasicParsing
+            Expand-Archive $nupkgPath -DestinationPath $extractPath -Force
+            $toolsDir = "$extractPath\tools"
+            if (Test-Path "$toolsDir\include") {
+              Copy-Item "$toolsDir\include" "$env:PORTABLE\python_embeded\include" -Recurse -Force
+              Write-Host "  ✓ include/ (Python.h) installed"
+            }
+            if (Test-Path "$toolsDir\libs") {
+              Copy-Item "$toolsDir\libs" "$env:PORTABLE\python_embeded\libs" -Recurse -Force
+              Write-Host "  ✓ libs/ (python3xx.lib) installed"
+            }
+          } catch {
+            Write-Host "  ⚠️ Failed to install dev headers: $_ (C extensions may fail)"
+          } finally {
+            Remove-Item $nupkgPath, $extractPath -Recurse -Force -ErrorAction SilentlyContinue
+          }
+
           # Pre-install build dependencies needed by some packages (e.g. insightface)
           Write-Host "Installing build dependencies..."
           & $python -m pip install Cython wheel setuptools --quiet 2>&1 | Out-Null
