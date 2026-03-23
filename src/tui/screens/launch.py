@@ -210,8 +210,10 @@ class LaunchScreen(Screen):
 
         args.extend(self.user_settings.build_comfyui_args())
 
-        # Exit TUI and run ComfyUI in foreground (Ctrl+C works)
+        # Exit TUI, clear screen, and run ComfyUI in foreground
         self.app.exit()
+        import os
+        os.system("cls" if sys.platform == "win32" else "clear")  # noqa: S605
         print(f"\n🚀 Starting ComfyUI ({mode} mode)...")
         print(f"   {' '.join(args)}\n")
         print("   Press Ctrl+C to stop.\n")
