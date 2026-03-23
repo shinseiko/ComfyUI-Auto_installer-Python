@@ -42,6 +42,12 @@ def _find_catalog(install_path: Path) -> Path | None:
     return None
 
 
+def _sanitize_id(key: str) -> str:
+    """Sanitize a string for use as a Textual CSS identifier."""
+    import re
+    return re.sub(r"[^a-zA-Z0-9_-]", "-", key)
+
+
 class DownloadScreen(Screen):
     """Model catalog browser — select bundle then variant."""
 
@@ -59,6 +65,7 @@ class DownloadScreen(Screen):
         self.catalog = None
         self.selected_bundle_key: str | None = None
         self._button_ids: list[str] = []
+        self._id_to_key: dict[str, str] = {}  # sanitized id -> bundle key
 
     def compose(self) -> ComposeResult:
         """Show loading state initially."""
@@ -124,7 +131,8 @@ class DownloadScreen(Screen):
                 model_name = bkey.split("/", 1)[-1] if "/" in bkey else bkey
                 variant_count = len(bundle.variants)
                 btn_type = f" [dim]({bundle.meta.bundle_type})[/dim]" if bundle.meta.bundle_type else ""
-                btn_id = f"btn-bundle-{bkey.replace('/', '_')}"
+                btn_id = f"btn-bundle-{_sanitize_id(bkey)}"
+                self._id_to_key[btn_id] = bkey
                 self._button_ids.append(btn_id)
 
                 content.mount(Button(
@@ -181,7 +189,8 @@ class DownloadScreen(Screen):
             else:
                 vram_tag = ""
 
-            btn_id = f"btn-var-{vname.replace(' ', '_')}"
+            btn_id = f"btn-var-{_sanitize_id(vname)}"
+            self._id_to_key[btn_id] = vname
             self._button_ids.append(btn_id)
 
             content.mount(Button(
@@ -204,10 +213,10 @@ class DownloadScreen(Screen):
             except Exception:
                 pass
 
-    def _start_download(self, variant_name: str) -> None:
+    def _start_download(self, btn_id: str) -> None:
         """Exit TUI and run download command."""
-        variant_name = variant_name.replace("_", " ")
-        self.app.exit(result=f"download-models --bundle {self.selected_bundle_key} --variant {variant_name}")
+        variant_name = self._id_to_key.get(btn_id, "")
+        self.app.exit(result=f'download-models --bundle "{self.selected_bundle_key}" --variant "{variant_name}"')
 
     # ── Navigation ──
     def _get_focused_index(self) -> int:
@@ -256,9 +265,8 @@ class DownloadScreen(Screen):
             self._show_bundle_list()
 
         elif bid.startswith("btn-bundle-"):
-            bundle_key = bid.replace("btn-bundle-", "").replace("_", "/")
+            bundle_key = self._id_to_key.get(bid, "")
             self._show_variant_list(bundle_key)
 
         elif bid.startswith("btn-var-"):
-            variant_name = bid.replace("btn-var-", "")
-            self._start_download(variant_name)
+            self._start_download(bid)
