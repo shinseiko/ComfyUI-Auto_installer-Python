@@ -98,13 +98,15 @@ class LaunchScreen(Screen):
         with Vertical(id="launch-container"):
             # Title + VRAM info
             vram_str = f"{self.vram_gib:.0f} GB" if self.vram_gib else "unknown"
-            yield Static(
-                f"🚀 [b]Launch ComfyUI[/b]\n\n"
-                f"[b]GPU VRAM:[/b] {vram_str}",
-                id="launch-title",
-            )
+            with Center():
+                yield Static(
+                    f"🚀 [b]Launch ComfyUI[/b]\n\n"
+                    f"[b]GPU VRAM:[/b] {vram_str}",
+                    id="launch-title",
+                )
 
-            yield Static("\n[b]Choose VRAM mode:[/b]", id="launch-subtitle")
+            with Center():
+                yield Static("\n[b]Choose VRAM mode:[/b]", id="launch-subtitle")
 
             with Center(id="launch-modes"):
                 for mode_key in ("high", "normal", "low"):
@@ -121,11 +123,12 @@ class LaunchScreen(Screen):
 
             # SageAttention toggle info
             sage = "✅" if self.user_settings.use_sage_attention else "❌"
-            yield Static(
-                f"\n[dim]SageAttention: {sage}  •  Listen: {self.user_settings.listen_address}  •  "
-                f"Change in Settings[/dim]",
-                id="launch-info",
-            )
+            with Center():
+                yield Static(
+                    f"\n[dim]SageAttention: {sage}  •  Listen: {self.user_settings.listen_address}  •  "
+                    f"Change in Settings[/dim]",
+                    id="launch-info",
+                )
 
             with Center():
                 yield Button("← Back", id="btn-back", classes="menu-button")
