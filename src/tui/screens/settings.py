@@ -45,7 +45,7 @@ class SettingsScreen(Screen):
             yield Select(
                 [
                     ("127.0.0.1  (local only)", "127.0.0.1"),
-                    ("0.0.0.0  (LAN / cloud)", "0.0.0.0"),
+                    ("0.0.0.0  (LAN / cloud)", "0.0.0.0"),  # nosec B104
                 ],
                 value=s.listen_address,
                 id="sel-listen",

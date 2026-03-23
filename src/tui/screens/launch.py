@@ -134,7 +134,7 @@ class LaunchScreen(Screen):
                 yield Select(
                     [
                         ("127.0.0.1 (local)", "127.0.0.1"),
-                        ("0.0.0.0 (LAN)", "0.0.0.0"),
+                        ("0.0.0.0 (LAN)", "0.0.0.0"),  # nosec B104
                     ],
                     value=self.user_settings.listen_address,
                     id="sel-listen",

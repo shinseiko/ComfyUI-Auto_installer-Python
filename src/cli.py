@@ -47,7 +47,7 @@ def main() -> None:
             import os
             import subprocess
 
-            os.system("cls" if sys.platform == "win32" else "clear")  # noqa: S605
+            os.system("cls" if sys.platform == "win32" else "clear")  # noqa: S605  # nosec B605
             mode = result.get("mode", "normal")
             print(f"\n🚀 Starting ComfyUI ({mode} mode)...")
             print(f"   {' '.join(result['args'])}\n")
