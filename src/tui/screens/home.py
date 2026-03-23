@@ -30,17 +30,6 @@ LOGO = r"""
   ── ComfyUI ──
 """
 
-# Map button IDs to their index for keyboard focus
-MENU_BUTTONS = [
-    "btn-launch",
-    "btn-download",
-    "btn-update",
-    "btn-install",
-    "btn-info",
-    "btn-settings",
-    "btn-exit",
-]
-
 
 def _get_system_summary() -> str:
     """Build a one-line system overview."""
@@ -71,19 +60,23 @@ def _is_comfyui_installed(install_path: Path) -> bool:
 class HomeScreen(Screen):
     """Main menu screen."""
 
+    # Buttons list is built dynamically in on_mount based on install state
+    _menu_buttons: list[str] = []
+
     BINDINGS = [
-        Binding("1", "menu_1", "Launch", show=False),
-        Binding("2", "menu_2", "Download", show=False),
-        Binding("3", "menu_3", "Update", show=False),
-        Binding("4", "menu_4", "Install", show=False),
-        Binding("5", "menu_5", "Info", show=False),
-        Binding("6", "menu_6", "Settings", show=False),
-        Binding("7", "menu_7", "Exit", show=False),
-        Binding("up", "move_up", "Up", show=False, priority=True),
-        Binding("down", "move_down", "Down", show=False, priority=True),
+        Binding("1", "menu_1", show=False),
+        Binding("2", "menu_2", show=False),
+        Binding("3", "menu_3", show=False),
+        Binding("4", "menu_4", show=False),
+        Binding("5", "menu_5", show=False),
+        Binding("6", "menu_6", show=False),
+        Binding("7", "menu_7", show=False),
+        Binding("8", "menu_8", show=False),
+        Binding("up", "move_up", show=False, priority=True),
+        Binding("down", "move_down", show=False, priority=True),
         Binding("k", "move_up", show=False),
         Binding("j", "move_down", show=False),
-        Binding("enter", "press_focused", "Select", show=False, priority=True),
+        Binding("enter", "press_focused", show=False, priority=True),
     ]
 
     def __init__(
@@ -112,58 +105,48 @@ class HomeScreen(Screen):
                 )
 
             with Center(id="menu-container"):
-                yield Button(
-                    "1 │ 🚀  Launch ComfyUI",
-                    id="btn-launch",
-                    classes="menu-button -primary",
-                    disabled=not self.comfyui_installed,
-                )
-                yield Button(
-                    "2 │ ⬇️   Download Models",
-                    id="btn-download",
-                    classes="menu-button",
-                    disabled=not self.comfyui_installed,
-                )
-                yield Button(
-                    "3 │ 🔄  Update ComfyUI + Nodes",
-                    id="btn-update",
-                    classes="menu-button",
-                    disabled=not self.comfyui_installed,
-                )
-                yield Button(
-                    "4 │ 🔧  Install (first-time setup)",
-                    id="btn-install",
-                    classes="menu-button" if self.comfyui_installed else "menu-button -primary",
-                )
-                yield Button(
-                    "5 │ ℹ️   System Info",
-                    id="btn-info",
-                    classes="menu-button",
-                )
-                yield Button(
-                    "6 │ ⚙️   Settings",
-                    id="btn-settings",
-                    classes="menu-button",
-                )
-                yield Button(
-                    "7 │ ❌  Exit",
-                    id="btn-exit",
-                    classes="menu-button -danger",
-                )
+                if self.comfyui_installed:
+                    yield from self._compose_installed_menu()
+                else:
+                    yield from self._compose_fresh_menu()
         yield Footer()
+
+    def _compose_installed_menu(self):
+        """Menu when ComfyUI is already installed."""
+        self._menu_buttons = [
+            "btn-launch", "btn-download", "btn-update",
+            "btn-reinstall", "btn-install",
+            "btn-info", "btn-settings", "btn-exit",
+        ]
+        yield Button("1 │ 🚀  Launch ComfyUI", id="btn-launch", classes="menu-button -primary")
+        yield Button("2 │ ⬇️   Download Models", id="btn-download", classes="menu-button")
+        yield Button("3 │ 🔄  Update ComfyUI + Nodes", id="btn-update", classes="menu-button")
+        yield Button("4 │ ♻️   Reinstall (clean)", id="btn-reinstall", classes="menu-button")
+        yield Button("5 │ 🔧  New Installation", id="btn-install", classes="menu-button")
+        yield Button("6 │ ℹ️   System Info", id="btn-info", classes="menu-button")
+        yield Button("7 │ ⚙️   Settings", id="btn-settings", classes="menu-button")
+        yield Button("8 │ ❌  Exit", id="btn-exit", classes="menu-button -danger")
+
+    def _compose_fresh_menu(self):
+        """Menu when ComfyUI is not yet installed."""
+        self._menu_buttons = [
+            "btn-install", "btn-info", "btn-settings", "btn-exit",
+        ]
+        yield Button("1 │ 🔧  Install ComfyUI", id="btn-install", classes="menu-button -primary")
+        yield Button("2 │ ℹ️   System Info", id="btn-info", classes="menu-button")
+        yield Button("3 │ ⚙️   Settings", id="btn-settings", classes="menu-button")
+        yield Button("4 │ ❌  Exit", id="btn-exit", classes="menu-button -danger")
 
     def on_mount(self) -> None:
         """Focus the appropriate button on mount."""
-        if self.comfyui_installed:
-            self.query_one("#btn-launch", Button).focus()
-        else:
-            self.query_one("#btn-install", Button).focus()
+        if self._menu_buttons:
+            self.query_one(f"#{self._menu_buttons[0]}", Button).focus()
 
     # ── Number key shortcuts ────────────────────────────────────────
     def _press_button(self, index: int) -> None:
         """Simulate pressing a button by index."""
-        if 0 <= index < len(MENU_BUTTONS):
-            btn = self.query_one(f"#{MENU_BUTTONS[index]}", Button)
+        if 0 <= index < len(self._menu_buttons):
+            btn = self.query_one(f"#{self._menu_buttons[index]}", Button)
             if not btn.disabled:
                 btn.press()
 
@@ -188,25 +171,28 @@ class HomeScreen(Screen):
     def action_menu_7(self) -> None:
         self._press_button(6)
 
+    def action_menu_8(self) -> None:
+        self._press_button(7)
+
     # ── Arrow key navigation ────────────────────────────────────────
     def _get_focused_index(self) -> int:
         """Return the index of the currently focused button, or -1."""
         focused = self.focused
-        if isinstance(focused, Button) and focused.id in MENU_BUTTONS:
-            return MENU_BUTTONS.index(focused.id)
+        if isinstance(focused, Button) and focused.id in self._menu_buttons:
+            return self._menu_buttons.index(focused.id)
         return -1
 
     def action_move_down(self) -> None:
         """Move focus to the next menu button."""
         idx = self._get_focused_index()
-        next_idx = (idx + 1) % len(MENU_BUTTONS)
-        self.query_one(f"#{MENU_BUTTONS[next_idx]}", Button).focus()
+        next_idx = (idx + 1) % len(self._menu_buttons)
+        self.query_one(f"#{self._menu_buttons[next_idx]}", Button).focus()
 
     def action_move_up(self) -> None:
         """Move focus to the previous menu button."""
         idx = self._get_focused_index()
-        prev_idx = (idx - 1) % len(MENU_BUTTONS)
-        self.query_one(f"#{MENU_BUTTONS[prev_idx]}", Button).focus()
+        prev_idx = (idx - 1) % len(self._menu_buttons)
+        self.query_one(f"#{self._menu_buttons[prev_idx]}", Button).focus()
 
     def action_press_focused(self) -> None:
         """Press the currently focused button."""
@@ -246,6 +232,9 @@ class HomeScreen(Screen):
         elif button_id == "btn-install":
             from src.tui.screens.install import InstallScreen
             self.app.push_screen(InstallScreen(self.install_path, self.user_settings))
+
+        elif button_id == "btn-reinstall":
+            self._run_cli_command("install --reinstall")
 
     def _run_cli_command(self, command: str) -> None:
         """Exit TUI and run a CLI command in the terminal."""
