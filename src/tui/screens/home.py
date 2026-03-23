@@ -238,7 +238,7 @@ class HomeScreen(Screen):
 
         elif button_id == "btn-info":
             from src.tui.screens.info import InfoScreen
-            self.app.push_screen(InfoScreen())
+            self.app.push_screen(InfoScreen(self.install_path))
 
         elif button_id == "btn-settings":
             from src.tui.screens.settings import SettingsScreen
