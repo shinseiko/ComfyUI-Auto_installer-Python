@@ -214,6 +214,14 @@ Switch {
     color: $catppuccin-blue;
 }
 
+.dl-family-header {
+    width: 70;
+    height: auto;
+    text-align: center;
+    padding: 1 0 0 0;
+    color: $catppuccin-yellow;
+}
+
 /* ── Install Screen ─────────────────────────────────────────────── */
 #install-container {
     layout: vertical;
