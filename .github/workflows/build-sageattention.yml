@@ -167,7 +167,8 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12", "3.13"]
-        cuda_arch: ["8.0", "8.6", "8.9", "9.0"]
+        # SM90 (Hopper H100/H200) excluded: datacenter GPUs, Linux only
+        cuda_arch: ["8.0", "8.6", "8.9"]
         include:
           - cuda_arch: "8.0"
             cuda_arch_short: "80"
@@ -175,8 +176,6 @@ jobs:
             cuda_arch_short: "86"
           - cuda_arch: "8.9"
             cuda_arch_short: "89"
-          - cuda_arch: "9.0"
-            cuda_arch_short: "90"
     steps:
       - name: Install CUDA Toolkit 13.0
         shell: pwsh
