@@ -502,6 +502,11 @@ jobs:
               sa2["files"].update(files)
               sa2["_note"] = f"Pre-compiled for {arch_key}. Auto-updated by CI."
 
+          # Remove legacy flat 'sageattention' entry — replaced by per-arch keys
+          if sa2_files and "sageattention" in manifest["whl"]:
+              del manifest["whl"]["sageattention"]
+              print("  Removed legacy flat 'sageattention' manifest entry.")
+
           if sa3_files:
               if "sageattention3_blackwell" not in manifest["whl"]:
                   manifest["whl"]["sageattention3_blackwell"] = {"files": {}}

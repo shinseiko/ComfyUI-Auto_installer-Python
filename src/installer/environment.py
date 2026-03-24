@@ -526,6 +526,23 @@ def lookup_wheel_checksum(
     url_basename = wheel_url.rsplit("/", 1)[-1] if "/" in wheel_url else wheel_url
 
     whl_section = manifest.get("whl", {})
+
+    # --- Pass 1: full path match (handles per-arch subdirectories) ---
+    if url_whl_path:
+        for _pkg_name, pkg_data in whl_section.items():
+            if not isinstance(pkg_data, dict):
+                continue
+            files = pkg_data.get("files", {})
+            for _key, file_info in files.items():
+                if not isinstance(file_info, dict):
+                    continue
+                manifest_filename = file_info.get("filename", "")
+                if "whl/" in manifest_filename:
+                    manifest_whl_path = manifest_filename.split("whl/", 1)[-1]
+                    if manifest_whl_path == url_whl_path:
+                        return file_info.get("sha256")
+
+    # --- Pass 2: basename fallback (backwards compat) ---
     for _pkg_name, pkg_data in whl_section.items():
         if not isinstance(pkg_data, dict):
             continue
@@ -534,15 +551,6 @@ def lookup_wheel_checksum(
             if not isinstance(file_info, dict):
                 continue
             manifest_filename = file_info.get("filename", "")
-
-            # Prefer full path match (handles per-arch subdirectories)
-            if url_whl_path and manifest_filename:
-                # manifest stores e.g. "whl/sm89/sageattention-2.2.0-..."
-                manifest_whl_path = manifest_filename.split("whl/", 1)[-1] if "whl/" in manifest_filename else ""
-                if manifest_whl_path and manifest_whl_path == url_whl_path:
-                    return file_info.get("sha256")
-
-            # Fallback: basename comparison (backwards compat)
             manifest_basename = manifest_filename.rsplit("/", 1)[-1]
             if manifest_basename == url_basename:
                 return file_info.get("sha256")
