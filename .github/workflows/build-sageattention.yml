@@ -129,7 +129,7 @@ jobs:
         env:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         run: |
-          uv pip install --python $VENV_PYTHON modelscope
+          uv pip install --python $VENV_PYTHON modelscope numpy
           $VENV_PYTHON -c "
           from modelscope.hub.api import HubApi
           import glob, os
@@ -252,7 +252,7 @@ jobs:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         shell: pwsh
         run: |
-          uv pip install --python C:\build-venv\Scripts\python.exe modelscope
+          uv pip install --python C:\build-venv\Scripts\python.exe modelscope numpy
           C:\build-venv\Scripts\python.exe -c @"
           from modelscope.hub.api import HubApi
           import glob, os
@@ -360,7 +360,7 @@ jobs:
         env:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         run: |
-          uv pip install --python $VENV_PYTHON modelscope
+          uv pip install --python $VENV_PYTHON modelscope numpy
           $VENV_PYTHON -c "
           from modelscope.hub.api import HubApi
           import glob, os
@@ -542,7 +542,7 @@ jobs:
         env:
           MODELSCOPE_API_TOKEN: ${{ secrets.MODELSCOPE_API_TOKEN }}
         run: |
-          uv pip install --python /tmp/venv/bin/python modelscope
+          uv pip install --python /tmp/venv/bin/python modelscope numpy
           /tmp/venv/bin/python <<'PYEOF'
           from modelscope.hub.api import HubApi
           import os
