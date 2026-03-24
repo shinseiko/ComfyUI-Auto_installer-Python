@@ -187,6 +187,29 @@
 
 ---
 
-## Priority Order (Updated 2026-03-22)
+## 11. Open Issues (User Reports)
 
-**All items completed.** ✅ The project is release-ready.
+### 11.1 SageAttention SM89 kernel missing (RTX 40xx)
+- **Reported:** 2026-03-24
+- **Symptom:** `"Error running sage attention: SM89 kernel is not available. Make sure you GPUs with compute capability 8.9., using pytorch attention instead."`
+- **Root cause:** `build-sageattention.yml` compiles with `TORCH_CUDA_ARCH_LIST=8.0+PTX`. SageAttention 2.x uses **separate C extension modules** per SM (`sm80_compile`, `sm89_compile`, `sm90_compile`). PTX JIT doesn't help because the Python extension module `sm89_compile.so/.pyd` is never compiled — only `sm80_compile` is built.
+- **Fix:** Change `TORCH_CUDA_ARCH_LIST` to `"8.0;8.6;8.9;9.0+PTX"` in both Linux and Windows SA2 build jobs.
+- **Affected GPUs:** All RTX 40xx (sm_89 / Ada Lovelace). Possibly RTX 3060/3070/3080 too (sm_86).
+- [ ] Update `build-sageattention.yml` with multi-arch build
+- [ ] Rebuild and upload new wheels to HuggingFace Assets
+- [ ] Update `tools_manifest.json` checksums
+
+### 11.2 UV bootstrap fails silently on non-standard install paths
+- **Reported:** 2026-03-24
+- **Symptom:** Installation on `D:\` drive stalls — user had to install `uv` manually to continue.
+- **Root cause:** `Install.bat` Step 2 downloads `uv.exe` via `curl` + `tar`, but does not verify the extraction succeeded. If `curl` or `tar` fails silently, Step 3 tries to use a non-existent `%UV_EXE%` and fails.
+- **Fix:** Add a post-extraction check: `if not exist "%UV_EXE%" (echo [ERROR] uv extraction failed & pause & exit /b 1)` after line 112.
+- [ ] Add `uv.exe` existence check after extraction in `Install.bat`
+- [ ] Add equivalent check in `Install.sh`
+
+---
+
+## Priority Order (Updated 2026-03-24)
+
+- **11.1** SageAttention SM89 — Blocking for RTX 40xx users (majority of user base)
+- **11.2** UV bootstrap — Edge case but causes silent install failure

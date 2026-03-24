@@ -1,9 +1,13 @@
 # Build SageAttention wheels for multiple Python versions and GPU architectures.
 # Compiled wheels are uploaded to HuggingFace Assets for the installer to download.
 #
-# Strategy: SA2 uses "8.0+PTX" (native sm_80 + JIT for higher archs) to stay
-# within GitHub's 7 GB RAM limit. SA3 targets Blackwell sm_100 only.
+# Strategy: SA2 builds one wheel per GPU architecture (sm_80, sm_86, sm_89, sm_90)
+# to ensure each SM-specific C extension module is compiled. This is required because
+# SageAttention dispatches to architecture-specific modules (sm80_compile, sm89_compile, etc.)
+# that cannot be generated via PTX JIT — they must be natively compiled.
+#
 # Windows builds use the sdbds/SageAttention-for-windows fork (MSVC patches).
+# SA3 targets Blackwell sm_100 only.
 # A final job updates tools_manifest.json with SHA-256 hashes.
 #
 # Trigger: manual dispatch or tag push matching "sageattention-v*"
@@ -34,10 +38,10 @@ env:
 
 jobs:
   # ---------------------------------------------------------------------------
-  # SA2: "8.0+PTX" — compiles natively for sm_80, JIT for 86/89/90
+  # SA2 Linux: one job per (python × cuda_arch) — each produces one wheel
   # ---------------------------------------------------------------------------
   build-sa2:
-    name: "SA2 — Python ${{ matrix.python }} (sm_80+PTX)"
+    name: "SA2 — Python ${{ matrix.python }} — sm_${{ matrix.cuda_arch_short }} (Linux)"
     runs-on: ubuntu-latest
     container:
       image: nvidia/cuda:13.0.2-devel-ubuntu24.04
@@ -45,6 +49,16 @@ jobs:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12", "3.13"]
+        cuda_arch: ["8.0", "8.6", "8.9", "9.0"]
+        include:
+          - cuda_arch: "8.0"
+            cuda_arch_short: "80"
+          - cuda_arch: "8.6"
+            cuda_arch_short: "86"
+          - cuda_arch: "8.9"
+            cuda_arch_short: "89"
+          - cuda_arch: "9.0"
+            cuda_arch_short: "90"
     steps:
       - name: Install system dependencies
         run: |
@@ -77,18 +91,30 @@ jobs:
           cd /sageattention
           git checkout ${{ github.event.inputs.sageattention_ref || 'main' }}
 
-      - name: Build SageAttention 2 wheel
+      - name: Build SageAttention 2 wheel (sm_${{ matrix.cuda_arch_short }})
         working-directory: /sageattention
         env:
-          TORCH_CUDA_ARCH_LIST: "8.0+PTX"
+          TORCH_CUDA_ARCH_LIST: "${{ matrix.cuda_arch }}"
           MAX_JOBS: "1"
           PATH: "/build-venv/bin:/usr/local/cuda/bin:$PATH"
         run: |
           echo "Building for TORCH_CUDA_ARCH_LIST=$TORCH_CUDA_ARCH_LIST"
           $VENV_PYTHON -m pip wheel . --no-deps --no-build-isolation -w /wheels
 
-      - name: List built wheels
-        run: ls -lah /wheels/
+      - name: Rename wheel with arch suffix
+        run: |
+          cd /wheels
+          for f in sageattention-*.whl; do
+            # Insert arch suffix before the platform tag
+            # sageattention-2.2.0-cp313-cp313-linux_x86_64.whl
+            # → sageattention-2.2.0+sm${{ matrix.cuda_arch_short }}-cp313-cp313-linux_x86_64.whl
+            newname=$(echo "$f" | sed "s/sageattention-\([^-]*\)-/sageattention-\1+sm${{ matrix.cuda_arch_short }}-/")
+            if [ "$f" != "$newname" ]; then
+              mv "$f" "$newname"
+              echo "Renamed: $f → $newname"
+            fi
+          done
+          ls -lah /wheels/
 
       - name: Upload wheel to HuggingFace
         env:
@@ -138,20 +164,30 @@ jobs:
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sa2-cp${{ matrix.python }}-wheel
+          name: sa2-sm${{ matrix.cuda_arch_short }}-cp${{ matrix.python }}-linux-wheel
           path: /wheels/*.whl
           retention-days: 30
 
   # ---------------------------------------------------------------------------
-  # SA2 Windows: sdbds fork with MSVC patches
+  # SA2 Windows: one job per (python × cuda_arch)
   # ---------------------------------------------------------------------------
   build-sa2-windows:
-    name: "SA2 Win — Python ${{ matrix.python }} (sm_80+PTX)"
+    name: "SA2 Win — Python ${{ matrix.python }} — sm_${{ matrix.cuda_arch_short }}"
     runs-on: windows-latest
     strategy:
       fail-fast: false
       matrix:
         python: ["3.11", "3.12", "3.13"]
+        cuda_arch: ["8.0", "8.6", "8.9", "9.0"]
+        include:
+          - cuda_arch: "8.0"
+            cuda_arch_short: "80"
+          - cuda_arch: "8.6"
+            cuda_arch_short: "86"
+          - cuda_arch: "8.9"
+            cuda_arch_short: "89"
+          - cuda_arch: "9.0"
+            cuda_arch_short: "90"
     steps:
       - name: Install CUDA Toolkit 13.0
         shell: pwsh
@@ -191,19 +227,28 @@ jobs:
       - name: Clone SageAttention (Windows fork)
         run: git clone https://github.com/sdbds/SageAttention-for-windows.git C:\sageattention
 
-      - name: Build SageAttention 2 wheel
+      - name: Build SageAttention 2 wheel (sm_${{ matrix.cuda_arch_short }})
         working-directory: C:\sageattention
         shell: cmd
         env:
-          TORCH_CUDA_ARCH_LIST: "8.0+PTX"
+          TORCH_CUDA_ARCH_LIST: "${{ matrix.cuda_arch }}"
           MAX_JOBS: "1"
           DISTUTILS_USE_SDK: "1"
         run: |
           call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvarsall.bat" x64
           C:\build-venv\Scripts\python.exe -m pip wheel . --no-deps --no-build-isolation -w C:\wheels
 
-      - name: List built wheels
-        run: Get-ChildItem C:\wheels
+      - name: Rename wheel with arch suffix
+        shell: pwsh
+        run: |
+          Get-ChildItem C:\wheels\sageattention-*.whl | ForEach-Object {
+            $newName = $_.Name -replace 'sageattention-([^-]+)-', 'sageattention-$1+sm${{ matrix.cuda_arch_short }}-'
+            if ($newName -ne $_.Name) {
+              Rename-Item $_.FullName $newName
+              Write-Host "Renamed: $($_.Name) → $newName"
+            }
+          }
+          Get-ChildItem C:\wheels
 
       - name: Upload wheel to HuggingFace
         env:
@@ -225,7 +270,7 @@ jobs:
       - name: Upload wheel as artifact
         uses: actions/upload-artifact@v4
         with:
-          name: sa2-win-cp${{ matrix.python }}-wheel
+          name: sa2-sm${{ matrix.cuda_arch_short }}-cp${{ matrix.python }}-win-wheel
           path: C:\wheels\*.whl
           retention-days: 30
 
@@ -414,7 +459,7 @@ jobs:
               print(f"  {filename}: {sha256}")
 
               # Determine SA version and Python version from filename
-              # sageattention-2.1.1-cp313-cp313-linux_x86_64.whl
+              # sageattention-2.2.0+sm89-cp313-cp313-linux_x86_64.whl
               # sageattn3-1.0.0-cp313-cp313-linux_x86_64.whl
               parts = filename.split("-")
               pkg_name = parts[0]
@@ -440,28 +485,35 @@ jobs:
 
               if pkg_name.startswith("sageattn3") or pkg_name.startswith("sageattention3"):
                   sa3_files[key] = entry
-                  sa3_version = version
               else:
-                  sa2_files[key] = entry
-                  sa2_version = version
+                  # Group SA2 by arch — extract sm tag from version (e.g. "2.2.0+sm89")
+                  sm_tag = ""
+                  if "+sm" in version:
+                      sm_tag = version.split("+sm")[1]
+                  arch_key = f"sm{sm_tag}" if sm_tag else "default"
 
-          # Update manifest — merge with existing, don't remove old entries
-          if sa2_files:
-              if "sageattention" not in manifest["whl"]:
-                  manifest["whl"]["sageattention"] = {"files": {}}
-              sa2 = manifest["whl"]["sageattention"]
+                  if arch_key not in sa2_files:
+                      sa2_files[arch_key] = {}
+                  sa2_files[arch_key][key] = entry
+                  sa2_version = version.split("+")[0]
+
+          # Update manifest — per-arch SA2 entries
+          for arch_key, files in sa2_files.items():
+              manifest_key = f"sageattention_{arch_key}"
+              if manifest_key not in manifest["whl"]:
+                  manifest["whl"][manifest_key] = {"files": {}}
+              sa2 = manifest["whl"][manifest_key]
               sa2["version"] = sa2_version
-              sa2["platform"] = "linux"
               if "files" not in sa2:
                   sa2["files"] = {}
-              sa2["files"].update(sa2_files)
-              sa2["_note"] = "Linux pre-compiled wheels (sm_80+PTX). Auto-updated by CI."
+              sa2["files"].update(files)
+              sa2["_note"] = f"Pre-compiled for {arch_key}. Auto-updated by CI."
 
           if sa3_files:
               if "sageattention3_blackwell" not in manifest["whl"]:
                   manifest["whl"]["sageattention3_blackwell"] = {"files": {}}
               sa3 = manifest["whl"]["sageattention3_blackwell"]
-              sa3["version"] = sa3_version
+              sa3["version"] = version.split("+")[0]
               sa3["platform"] = "linux"
               if "files" not in sa3:
                   sa3["files"] = {}
@@ -479,9 +531,8 @@ jobs:
               f.write("\n")
 
           print("\n=== Updated manifest ===")
-          # Print only the sageattention sections
-          for key in ["sageattention", "sageattention3_blackwell"]:
-              if key in manifest.get("whl", {}):
+          for key in sorted(manifest.get("whl", {}).keys()):
+              if "sage" in key:
                   print(f"\n{key}:")
                   print(json.dumps(manifest["whl"][key], indent=2))
 
