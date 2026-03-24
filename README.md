@@ -1,10 +1,11 @@
 # 🚀 UmeAiRT's ComfyUI Auto-Installer
 
-![Version](https://img.shields.io/badge/Version-5.1.2-blue.svg)
+![Version](https://img.shields.io/badge/Version-5.1.2-blueviolet.svg)
 ![Python](https://img.shields.io/badge/Python-3.11%20|%203.12%20|%203.13-blue.svg)
-![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Docker-lightgrey.svg)
-![License](https://img.shields.io/badge/License-MIT-green.svg)
-![Tests](https://github.com/UmeAiRT/ComfyUI-Auto_installer-Python/actions/workflows/ci.yml/badge.svg)
+![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Docker-orange.svg)
+![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)
+![GitHub Stars](https://img.shields.io/github/stars/UmeAiRT/ComfyUI-Auto_installer-Python?style=flat&label=Stars&color=yellow)
+![PyPI Downloads](https://img.shields.io/pypi/dm/umeairt-comfyui-installer?label=Downloads&color=blue)
 
 Cross-platform Python CLI to fully automate the installation, update, and configuration of ComfyUI. One-click setup with GPU optimizations, curated custom nodes, and VRAM-aware model downloads.
 
