@@ -124,10 +124,20 @@
         "versions": {
           "linux_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm90/sageattention-2.2.0-cp311-cp311-linux_x86_64.whl",
           "linux_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm90/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl",
-          "linux_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm90/sageattention-2.2.0-cp313-cp313-linux_x86_64.whl",
-          "cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm90/sageattention-2.2.0-cp311-cp311-win_amd64.whl",
-          "cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm90/sageattention-2.2.0-cp312-cp312-win_amd64.whl",
-          "cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm90/sageattention-2.2.0-cp313-cp313-win_amd64.whl"
+          "linux_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm90/sageattention-2.2.0-cp313-cp313-linux_x86_64.whl"
+        }
+      },
+      {
+        "name": "sageattention",
+        "min_compute_capability": [10, 0],
+        "max_compute_capability": [10, 9],
+        "versions": {
+          "linux_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm100/sageattention-2.2.0-cp311-cp311-linux_x86_64.whl",
+          "linux_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm100/sageattention-2.2.0-cp312-cp312-linux_x86_64.whl",
+          "linux_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm100/sageattention-2.2.0-cp313-cp313-linux_x86_64.whl",
+          "cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm100/sageattention-2.2.0-cp311-cp311-win_amd64.whl",
+          "cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm100/sageattention-2.2.0-cp312-cp312-win_amd64.whl",
+          "cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/sm100/sageattention-2.2.0-cp313-cp313-win_amd64.whl"
         }
       },
       {
