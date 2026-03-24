@@ -133,7 +133,7 @@ jobs:
           $VENV_PYTHON -c "
           from modelscope.hub.api import HubApi
           import glob, os
-          api = HubApi()
+          api = HubApi(endpoint=os.environ.get('MS_ENDPOINT', 'https://www.modelscope.ai'))
           api.login(os.environ['MODELSCOPE_API_TOKEN'])
           for whl in glob.glob('/wheels/*.whl'):
               name = os.path.basename(whl)
@@ -256,7 +256,7 @@ jobs:
           C:\build-venv\Scripts\python.exe -c @"
           from modelscope.hub.api import HubApi
           import glob, os
-          api = HubApi()
+          api = HubApi(endpoint=os.environ.get('MS_ENDPOINT', 'https://www.modelscope.ai'))
           api.login(os.environ['MODELSCOPE_API_TOKEN'])
           for w in glob.glob('C:\\wheels\\*.whl'):
               name = os.path.basename(w)
@@ -364,7 +364,7 @@ jobs:
           $VENV_PYTHON -c "
           from modelscope.hub.api import HubApi
           import glob, os
-          api = HubApi()
+          api = HubApi(endpoint=os.environ.get('MS_ENDPOINT', 'https://www.modelscope.ai'))
           api.login(os.environ['MODELSCOPE_API_TOKEN'])
           for whl in glob.glob('/wheels/*.whl'):
               name = os.path.basename(whl)
@@ -546,7 +546,7 @@ jobs:
           /tmp/venv/bin/python <<'PYEOF'
           from modelscope.hub.api import HubApi
           import os
-          api = HubApi()
+          api = HubApi(endpoint=os.environ.get('MS_ENDPOINT', 'https://www.modelscope.ai'))
           api.login(os.environ["MODELSCOPE_API_TOKEN"])
           print("Uploading tools_manifest.json to ModelScope...")
           api.upload_file(
