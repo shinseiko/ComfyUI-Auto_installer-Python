@@ -5,6 +5,28 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.3] — Migration Script & Node Requirements Fix
+
+### Added
+
+- **PowerShell → Python migration script** — `Migrate-from-PS.ps1` standalone 6-step migration script. Auto-detects PS installations, preserves all user data (models, outputs, custom nodes), cleans PS infrastructure, and bootstraps the Python environment. One-liner: `irm https://get.umeai.art/migrate.ps1 | iex`.
+- **`reinstall_all_node_requirements()`** — New function in `nodes.py` that scans all `custom_nodes/` subdirectories and installs their `requirements.txt` via `uv`. Used after venv recreation (migration, `--reinstall`).
+- **Migration documentation** — `docs/migration.md` MkDocs guide with step-by-step instructions, troubleshooting, and manual migration path. README sections added to both Python and PowerShell repos.
+- **6 new tests** — `reinstall_all_node_requirements` (4 tests), `install_node` existing+requirements (1), `update_all_nodes` user node requirements (1).
+
+### Fixed
+
+- **`install_node()` did not reinstall requirements for existing nodes** — During migration or `--reinstall`, nodes already present on disk had their Python dependencies skipped entirely. Now requirements are always installed regardless of clone status. **(Critical fix)**
+- **`update_all_nodes()` ignored user-installed node dependencies** — User-installed nodes (not in manifest) with `requirements.txt` now have their dependencies reinstalled during updates.
+- **`find_uv()` failed to detect local `scripts/uv/`** — Auto-detection now works from CWD when `install_path` is not explicitly passed.
+- **`uv` not found in TUI System Info** — `install_path` derived from `python_exe` to locate the local `uv` binary.
+- **InsightFace installed from source on Windows** — Skipped from standard `pip install` packages; uses pre-compiled wheel instead.
+- **HuggingFace CI uploads failed on 412** — Retry logic with exponential backoff for `Precondition Failed` errors.
+
+### Changed
+
+- **426 tests** — up from 416 (all passing).
+
 ## [5.1.2] — SageAttention Per-Architecture Builds & Bootstrap Fallback
 
 ### Added

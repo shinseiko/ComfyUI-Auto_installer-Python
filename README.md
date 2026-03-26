@@ -1,6 +1,6 @@
 # 🚀 UmeAiRT's ComfyUI Auto-Installer
 
-![Version](https://img.shields.io/badge/Version-5.1.2-blueviolet.svg)
+![Version](https://img.shields.io/badge/Version-5.1.3-blueviolet.svg)
 ![Python](https://img.shields.io/badge/Python-3.11%20|%203.12%20|%203.13-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Docker-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)
