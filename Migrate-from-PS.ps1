@@ -210,6 +210,8 @@ $psFiles = @(
     "scripts\Download-WAN2.2-Models.ps1",
     "scripts\Download-Z-IMAGES-Models.ps1",
     "scripts\custom_nodes.csv",
+    "scripts\dependencies.json",
+    "scripts\nunchaku_versions.json",
     "scripts\snapshot.json",
     "scripts\environment.yml",
     "scripts\comfy.settings.json",
