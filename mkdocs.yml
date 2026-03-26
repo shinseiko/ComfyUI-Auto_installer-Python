@@ -78,6 +78,7 @@ nav:
       - Internals: codemaps/architecture.md
   - User Guide:
     - CLI Commands: cli-commands.md
+    - Migration from PowerShell: migration.md
     - Docker: docker.md
     - Security: security.md
   - API Reference:

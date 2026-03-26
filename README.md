@@ -100,6 +100,23 @@ docker run --gpus all --name comfyui -p 8188:8188 -p 8888:8888 -v comfyui-data:/
 
 > **Tip:** Use `-e NODE_TIER=minimal`, `umeairt`, or `full` (default) to control which custom nodes are installed on boot. The **lite** variants are ideal for RunPod where fast image pulls matter — PyTorch installs once on first boot and is cached in the persistent volume.
 
+## 🔄 Migrating from the PowerShell Version
+
+If you're currently using the **PowerShell version** (`ComfyUI-Auto_installer-PS`), you can migrate to this Python version with a single command. All your data (models, outputs, custom nodes) will be preserved.
+
+```powershell
+irm https://get.umeai.art/migrate.ps1 | iex
+```
+
+The script will:
+- Auto-detect your PowerShell installation
+- Clean up PS-specific files (scripts, old venv, old launchers)
+- Bootstrap the new Python environment (`uv` + `venv`)
+- Reinstall all Python dependencies for **every** custom node (including user-installed)
+- Generate new launcher scripts
+
+> ⚠️ **This operation is irreversible.** It is strongly recommended to back up your installation folder before proceeding. The script will suggest a backup command before asking for confirmation.
+
 ## 📂 Post-Installation
 
 Four launcher scripts are generated in your install directory:
