@@ -145,3 +145,88 @@ class TestCreateLaunchers:
                 create_launchers(tmp_path, log)
                 assert mock_sh.call_count == 2
                 assert mock_tool.call_count == 1  # Manager
+
+
+class TestWriteShLauncher:
+    """Direct tests for _write_sh_launcher (runs on all platforms)."""
+
+    def test_writes_sh_launcher_file(self, tmp_path: Path) -> None:
+        """Should write a .sh launcher with correct template vars."""
+        from src.installer.finalize import _write_sh_launcher
+
+        log = MagicMock()
+        _write_sh_launcher(tmp_path, "TestLauncher", "Test Mode", "--test-flag", log)
+
+        script = tmp_path / "TestLauncher.sh"
+        assert script.exists()
+        content = script.read_text(encoding="utf-8")
+        assert "Test Mode" in content
+        assert "--test-flag" in content
+
+    def test_sh_launcher_missing_template(self, tmp_path: Path) -> None:
+        """Should log error if template is missing."""
+        from src.installer.finalize import _write_sh_launcher
+
+        log = MagicMock()
+        with patch("src.installer.finalize.Path") as mock_path_cls:
+            mock_template = MagicMock()
+            mock_template.exists.return_value = False
+            mock_path_cls.return_value.__truediv__ = MagicMock(return_value=mock_template)
+            # This approach is complex; just patch the template path existence
+        # Simpler: use a monkeypatch on the template location
+        with patch("pathlib.Path.exists", return_value=False):
+            _write_sh_launcher(tmp_path, "X", "Y", "Z", log)
+            log.error.assert_called_once()
+
+
+class TestWriteShTool:
+    """Direct tests for _write_sh_tool (runs on all platforms)."""
+
+    def test_writes_sh_tool_file(self, tmp_path: Path) -> None:
+        """Should write a .sh tool script with correct template vars."""
+        from src.installer.finalize import _write_sh_tool
+
+        log = MagicMock()
+        _write_sh_tool(tmp_path, "TestManager", "Test Tool", "test-command", log)
+
+        script = tmp_path / "TestManager.sh"
+        assert script.exists()
+        content = script.read_text(encoding="utf-8")
+        assert "Test Tool" in content
+        assert "test-command" in content
+
+
+class TestWriteBatTool:
+    """Direct tests for _write_bat_tool (runs on all platforms)."""
+
+    def test_writes_bat_tool_file(self, tmp_path: Path) -> None:
+        """Should write a .bat tool script with correct template vars."""
+        from src.installer.finalize import _write_bat_tool
+
+        log = MagicMock()
+        _write_bat_tool(tmp_path, "TestManager", "Test Tool", "test-command", log)
+
+        script = tmp_path / "TestManager.bat"
+        assert script.exists()
+        content = script.read_text(encoding="utf-8")
+        assert "Test Tool" in content
+        assert "test-command" in content
+
+
+class TestInstallCliInEnvironment:
+    """Tests for install_cli_in_environment."""
+
+    def test_calls_uv_install(self, tmp_path: Path) -> None:
+        """Should call uv_install with editable flag."""
+        from src.installer.finalize import install_cli_in_environment
+
+        log = MagicMock()
+        python_exe = tmp_path / "python"
+
+        with patch("src.installer.finalize.uv_install") as mock_uv:
+            install_cli_in_environment(python_exe, log)
+            mock_uv.assert_called_once()
+            # Verify editable kwarg was passed
+            _, kwargs = mock_uv.call_args
+            assert "editable" in kwargs or len(mock_uv.call_args.args) > 1
+

@@ -64,9 +64,9 @@ def find_uv(
     #    python_exe is {install}/scripts/venv/Scripts/python.exe (win)
     #    or             {install}/scripts/venv/bin/python         (linux)
     if install_path is None and python_exe is not None:
-        from pathlib import Path as _P
+        from pathlib import Path
 
-        exe = _P(python_exe).resolve()
+        exe = Path(python_exe).resolve()
         # Walk up to find a parent containing scripts/uv/
         for candidate in exe.parents:
             local_uv = candidate / "scripts" / "uv" / uv_name
