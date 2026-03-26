@@ -26,7 +26,7 @@ class TestInstallNode:
     """Tests for install_node."""
 
     def test_already_installed(self, tmp_path: Path) -> None:
-        """Should skip if node directory already exists."""
+        """Should skip clone but still install requirements if node already exists."""
         node = NodeEntry(name="TestNode", url="https://example.com/test.git", tier="full")
         nodes_dir = tmp_path / "custom_nodes"
         (nodes_dir / "TestNode").mkdir(parents=True)
@@ -35,6 +35,24 @@ class TestInstallNode:
         assert install_node(node, nodes_dir, MagicMock(), log) is True
         log.sub.assert_called_once()
         assert "already installed" in log.sub.call_args[0][0]
+
+    def test_already_installed_reinstalls_requirements(self, tmp_path: Path) -> None:
+        """Should reinstall requirements for existing nodes (migration/reinstall scenario)."""
+        node = NodeEntry(
+            name="ExistingNode",
+            url="https://example.com/existing.git",
+            tier="full",
+            requirements="requirements.txt",
+        )
+        nodes_dir = tmp_path / "custom_nodes"
+        node_dir = nodes_dir / "ExistingNode"
+        node_dir.mkdir(parents=True)
+        (node_dir / "requirements.txt").write_text("piexif\nwatchdog\n")
+
+        log = MagicMock()
+        with patch("src.installer.nodes.uv_install") as mock_uv:
+            assert install_node(node, nodes_dir, MagicMock(), log) is True
+            mock_uv.assert_called_once()
 
     def test_clone_success(self, tmp_path: Path) -> None:
         """Should clone and return True on success."""

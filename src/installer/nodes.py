@@ -171,6 +171,12 @@ def install_node(
 
     if node_dir.exists():
         log.sub(f"  {node.name}: already installed", style="success")
+        # Still install requirements — the venv may have been recreated
+        # (migration, --reinstall) while the node directory persisted.
+        if node.requirements:
+            req_file = node_dir / node.requirements
+            if req_file.exists():
+                _pip_install_requirements(python_exe, req_file, log)
         return True
 
     # Clone with retry (network can be flaky)
