@@ -63,7 +63,7 @@ def find_uv(
     # 2. Auto-detect from python_exe path
     #    python_exe is {install}/scripts/venv/Scripts/python.exe (win)
     #    or             {install}/scripts/venv/bin/python         (linux)
-    if install_path is None and python_exe is not None:
+    if python_exe is not None:
         from pathlib import Path
 
         exe = Path(python_exe).resolve()
