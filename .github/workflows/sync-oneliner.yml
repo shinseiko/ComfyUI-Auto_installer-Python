@@ -1,0 +1,50 @@
+# Sync migration script to get.umeai.art on every change
+# The get.umeai.art repo serves one-liner scripts via GitHub Pages.
+#
+# Requirements:
+#   - Org Settings > Actions > General > Workflow permissions:
+#       "Read and write permissions" + "Allow GitHub Actions to create
+#       and approve pull requests" must be enabled.
+#   - Alternatively, create a PAT secret named GH_PAT with contents:write
+#       scope on the get.umeai.art repo, and replace the token below.
+
+name: Sync One-Liner Scripts
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Migrate-from-PS.ps1"
+
+jobs:
+  sync:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout installer repo
+        uses: actions/checkout@v4
+
+      - name: Checkout get.umeai.art
+        uses: actions/checkout@v4
+        with:
+          repository: UmeAiRT/get.umeai.art
+          path: _oneliner
+          token: ${{ secrets.GH_PAT || secrets.GITHUB_TOKEN }}
+
+      - name: Sync migrate.ps1
+        run: |
+          cp Migrate-from-PS.ps1 _oneliner/migrate.ps1
+
+          cd _oneliner
+          if git diff --quiet migrate.ps1; then
+            echo "No changes to sync."
+            exit 0
+          fi
+
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add migrate.ps1
+          git commit -m "sync: update migrate.ps1 from installer repo"
+          git push
