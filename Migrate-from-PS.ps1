@@ -1,5 +1,5 @@
 # ============================================================================
-# UmeAiRT ComfyUI — PowerShell to Python Migration Script
+# UmeAiRT ComfyUI -- PowerShell to Python Migration Script
 #
 # Usage (one-liner):
 #   irm https://get.umeai.art/migrate.ps1 | iex
@@ -16,7 +16,7 @@ $ErrorActionPreference = "Stop"
 
 Write-Host ""
 Write-Host "============================================================================" -ForegroundColor Cyan
-Write-Host "    UmeAiRT ComfyUI — Migration PowerShell -> Python" -ForegroundColor Cyan
+Write-Host "    UmeAiRT ComfyUI -- Migration PowerShell -> Python" -ForegroundColor Cyan
 Write-Host "============================================================================" -ForegroundColor Cyan
 Write-Host ""
 
@@ -328,7 +328,7 @@ Write-Host "[Step 5/6] Setting up Python environment..." -ForegroundColor Yellow
 $uvDir = Join-Path $InstallPath "scripts\uv"
 $uvExe = Join-Path $uvDir "uv.exe"
 
-# Native commands (uv, curl, tar) write info to stderr — prevent PS from
+# Native commands (uv, curl, tar) write info to stderr -- prevent PS from
 # treating those messages as terminating errors.
 $ErrorActionPreference = "Continue"
 
