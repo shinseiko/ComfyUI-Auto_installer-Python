@@ -133,7 +133,9 @@ def run_install(
 
     # Create marker — removed only on successful completion
     install_path.mkdir(parents=True, exist_ok=True)
-    marker.write_text("started", encoding="utf-8")
+    # Preserve migration context if set by Migrate-from-PS.ps1
+    existing_context = marker.read_text(encoding="utf-8").strip() if marker.exists() else ""
+    marker.write_text(existing_context if existing_context == "migration" else "fresh", encoding="utf-8")
 
     # ── Load user settings ────────────────────────────────────────
     load_settings(install_path / "scripts" / "local-config.json")
@@ -284,10 +286,14 @@ def _handle_partial_install(
     """Detect and handle a previously failed installation.
 
     If a ``.install_in_progress`` marker file exists, a previous run
-    crashed before completing.  Offer the user two choices:
+    crashed before completing.  The marker content determines the
+    cleanup strategy:
 
-    1. **Clean up** — delete the partial install directory and start fresh.
-    2. **Continue** — keep existing files and retry from step 1.
+    - ``"fresh"`` — a fresh install was interrupted.  Safe to delete
+      all contents and start over (no user data expected).
+    - ``"migration"`` — a migration from the PowerShell installer was
+      interrupted.  User data (models, outputs, custom nodes) must
+      be preserved; only infrastructure is cleaned.
 
     Args:
         install_path: Root installation directory.
@@ -297,37 +303,89 @@ def _handle_partial_install(
     if not marker.exists():
         return
 
-    log.warning(
-        "A previous installation was interrupted before completing.",
-        level=1,
-    )
-    log.item(f"Location: {install_path}")
+    # Read context from marker (default to "fresh" for old-style markers)
+    context = marker.read_text(encoding="utf-8").strip()
+    is_migration = context == "migration"
 
-    if confirm("Delete the partial installation and start fresh?"):
-        log.item("Cleaning up partial installation...")
-        # Preserve the logs directory for debugging
-        logs_dir = install_path / "logs"
-        logs_backup = None
-        if logs_dir.exists():
-            import tempfile
-
-            logs_backup = Path(tempfile.mkdtemp()) / "logs"
-            shutil.copytree(logs_dir, logs_backup)
-
-        # Remove everything in install_path
-        for child in install_path.iterdir():
-            if child.is_dir():
-                shutil.rmtree(child, ignore_errors=True)
-            else:
-                child.unlink(missing_ok=True)
-
-        # Restore logs
-        if logs_backup and logs_backup.exists():
-            shutil.copytree(logs_backup, logs_dir)
-            shutil.rmtree(logs_backup, ignore_errors=True)
-
-        log.sub("Partial installation removed.", style="success")
-    else:
-        log.item("Keeping existing files. Retrying installation...")
+    if is_migration:
+        log.warning(
+            "A previous migration was interrupted before completing.",
+            level=1,
+        )
+        log.item(f"Location: {install_path}")
+        log.item("Cleaning up infrastructure only (your models and data are preserved)...")
+        _safe_cleanup(install_path, log)
         marker.unlink(missing_ok=True)
+        log.sub("Infrastructure cleaned. Retrying installation...", style="success")
+    else:
+        log.warning(
+            "A previous installation was interrupted before completing.",
+            level=1,
+        )
+        log.item(f"Location: {install_path}")
+        log.warning(
+            f"\u26a0  This will DELETE ALL contents of: {install_path}",
+            level=1,
+        )
+
+        if confirm("Delete the partial installation and start fresh?"):
+            log.item("Cleaning up partial installation...")
+            # Preserve the logs directory for debugging
+            logs_dir = install_path / "logs"
+            logs_backup = None
+            if logs_dir.exists():
+                import tempfile
+
+                logs_backup = Path(tempfile.mkdtemp()) / "logs"
+                shutil.copytree(logs_dir, logs_backup)
+
+            # Remove everything in install_path
+            for child in install_path.iterdir():
+                if child.is_dir():
+                    shutil.rmtree(child, ignore_errors=True)
+                else:
+                    child.unlink(missing_ok=True)
+
+            # Restore logs
+            if logs_backup and logs_backup.exists():
+                shutil.copytree(logs_backup, logs_dir)
+                shutil.rmtree(logs_backup, ignore_errors=True)
+
+            log.sub("Partial installation removed.", style="success")
+        else:
+            log.item("Keeping existing files. Retrying installation...")
+            marker.unlink(missing_ok=True)
+
+
+def _safe_cleanup(install_path: Path, log: InstallerLogger) -> None:
+    """Remove installer infrastructure while preserving user data.
+
+    Removes ``ComfyUI/``, ``scripts/venv/``, and launcher scripts.
+    Preserves ``models/``, ``output/``, ``input/``, ``custom_nodes/``,
+    ``user/``, ``scripts/`` (except venv), and ``logs/``.
+
+    Args:
+        install_path: Root installation directory.
+        log: Installer logger.
+    """
+    preserve = {"models", "output", "input", "custom_nodes", "user", "scripts", "logs"}
+
+    # Remove ComfyUI git repo (will be re-cloned)
+    comfy_dir = install_path / "ComfyUI"
+    if comfy_dir.exists():
+        log.sub("Removing ComfyUI...", style="dim")
+        shutil.rmtree(comfy_dir, ignore_errors=True)
+
+    # Remove venv (will be recreated)
+    venv_dir = install_path / "scripts" / "venv"
+    if venv_dir.exists():
+        log.sub("Removing venv...", style="dim")
+        shutil.rmtree(venv_dir, ignore_errors=True)
+
+    # Remove launcher scripts only
+    for child in install_path.iterdir():
+        if child.name in preserve or child.name == "ComfyUI":
+            continue
+        if child.is_file() and child.suffix in (".bat", ".sh", ".ps1"):
+            child.unlink(missing_ok=True)
 

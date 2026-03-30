@@ -390,6 +390,10 @@ Write-Host ""
 Write-Host "[Step 6/6] Running Python installer (reusing existing data)..." -ForegroundColor Yellow
 Write-Host ""
 
+# Write migration-aware marker so partial cleanup preserves user data
+$markerPath = Join-Path $InstallPath ".install_in_progress"
+Set-Content -Path $markerPath -Value "migration" -Encoding UTF8
+
 & $venvPy -m src.cli install --path $InstallPath --type venv --nodes full
 
 Write-Host ""
