@@ -1,5 +1,6 @@
 # ============================================================================
 # UmeAiRT ComfyUI -- PowerShell to Python Migration Script
+# Version: 1.0.1
 #
 # Usage (one-liner):
 #   irm https://get.umeai.art/migrate.ps1 | iex
