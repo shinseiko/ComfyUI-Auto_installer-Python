@@ -274,21 +274,32 @@ class TestInstallSageattention:
     """Tests for install_sageattention."""
 
     def test_already_installed(self) -> None:
+        from src.config import SageAttentionWheelConfig
         from src.installer.optimizations import install_sageattention
+
         log = MagicMock()
         deps = MagicMock()
-        with patch("src.installer.optimizations._check_package_installed", return_value="2.1.0"):
+        sa_wheel = SageAttentionWheelConfig(
+            name="sageattention",
+            min_compute_capability=[8, 0],
+            max_compute_capability=[9, 9],
+        )
+        deps.pip_packages.sageattention_wheels = [sa_wheel]
+
+        with (
+            patch("src.installer.optimizations._check_package_installed", return_value="2.1.0"),
+            patch("src.installer.optimizations.get_compute_capability", return_value=(8, 9)),
+            patch("src.installer.optimizations._get_cuda_version_from_torch", return_value="13.0"),
+            patch("src.installer.environment.load_tools_manifest", return_value={}),
+        ):
             install_sageattention(MagicMock(), MagicMock(), deps, log)
-        log.sub.assert_any_call("SageAttention already installed: v2.1.0", style="success")
+        log.sub.assert_any_call("sageattention already installed: v2.1.0", style="success")
 
     def test_no_gpu_detected(self) -> None:
         from src.installer.optimizations import install_sageattention
         log = MagicMock()
         deps = MagicMock()
-        with (
-            patch("src.installer.optimizations._check_package_installed", return_value=None),
-            patch("src.installer.optimizations.get_compute_capability", return_value=None),
-        ):
+        with patch("src.installer.optimizations.get_compute_capability", return_value=None):
             install_sageattention(MagicMock(), MagicMock(), deps, log)
         log.info.assert_called_once()
 

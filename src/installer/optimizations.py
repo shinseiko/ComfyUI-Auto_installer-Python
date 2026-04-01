@@ -265,13 +265,18 @@ def install_sageattention(
     deps: DependenciesConfig,
     log: InstallerLogger,
 ) -> None:
-    """Install the correct SageAttention wheel based on GPU compute capability.
+    """Install SageAttention wheel(s) based on GPU compute capability.
 
-    Checks ``deps.pip_packages.sageattention_wheels`` for a wheel whose
-    compute-capability range matches the detected GPU.  Checksums are
-    looked up from ``tools_manifest.json`` rather than hardcoded in
-    ``dependencies.json``.  Falls back to PyPI ``sageattention`` with
-    ``--no-build-isolation`` if no pre-built wheel is available.
+    Iterates **all** entries in ``deps.pip_packages.sageattention_wheels``
+    whose compute-capability range matches the detected GPU.  On Blackwell
+    GPUs this installs both SageAttention 2 (stable INT8/FP16 backend used
+    by ``--use-sage-attention``) and SageAttention 3 (experimental FP4
+    backend selectable via KJNodes).
+
+    Checksums are looked up from ``tools_manifest.json`` rather than
+    hardcoded in ``dependencies.json``.  Falls back to PyPI
+    ``sageattention`` with ``--no-build-isolation`` only when **no**
+    pre-built wheel was installed.
 
     Args:
         python_exe: Path to the venv Python executable.
@@ -280,14 +285,6 @@ def install_sageattention(
         log: Installer logger for user-facing messages.
     """
     from src.utils.download import download_file
-
-    # Check if already installed
-    installed = _check_package_installed(python_exe, "sageattention")
-    if installed is None:
-        installed = _check_package_installed(python_exe, "sageattention3")
-    if installed:
-        log.sub(f"SageAttention already installed: v{installed}", style="success")
-        return
 
     # Detect compute capability
     cc = get_compute_capability()
@@ -301,7 +298,7 @@ def install_sageattention(
     from src.installer.environment import load_tools_manifest, lookup_wheel_checksum
     manifest = load_tools_manifest(install_path)
 
-    # Find matching wheel from config
+    # Find matching wheels from config
     sa_wheels = deps.pip_packages.sageattention_wheels
     py_version = (sys.version_info.major, sys.version_info.minor)
     cuda_tag = "cu130"  # Default CUDA tag for our builds
@@ -316,8 +313,18 @@ def install_sageattention(
             if tag:
                 cuda_tag = tag
 
+    installed_count = 0
+
     for sa_whl in sa_wheels:
         if not sa_whl.matches_gpu(cc):
+            continue
+
+        # Check if this specific package is already installed
+        pkg_check_name = sa_whl.name.replace("-", "_")
+        already = _check_package_installed(python_exe, pkg_check_name)
+        if already:
+            log.sub(f"{sa_whl.name} already installed: v{already}", style="success")
+            installed_count += 1
             continue
 
         resolved = sa_whl.resolve(py_version, cuda_tag)
@@ -334,15 +341,18 @@ def install_sageattention(
         try:
             download_file(whl_url, wheel_path, checksum=whl_checksum, mirrors=deps.mirrors)
             uv_install(python_exe, [str(wheel_path)], ignore_errors=True)
-            installed = _check_package_installed(python_exe, sa_whl.name.replace("-", "_"))
-            if installed:
-                log.sub(f"{sa_whl.name} installed: v{installed}", style="success")
+            ver = _check_package_installed(python_exe, pkg_check_name)
+            if ver:
+                log.sub(f"{sa_whl.name} installed: v{ver}", style="success")
+                installed_count += 1
             else:
                 log.warning(f"{sa_whl.name} wheel installed but not importable.", level=2)
         except Exception as e:
             log.warning(f"Failed to install {sa_whl.name} wheel: {e}", level=2)
         finally:
             wheel_path.unlink(missing_ok=True)
+
+    if installed_count > 0:
         return
 
     # Fallback: compile from PyPI (slow, needs build tools)
