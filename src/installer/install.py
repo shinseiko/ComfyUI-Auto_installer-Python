@@ -330,26 +330,22 @@ def _handle_partial_install(
 
         if confirm("Delete the partial installation and start fresh?"):
             log.item("Cleaning up partial installation...")
-            # Preserve the logs directory for debugging
-            logs_dir = install_path / "logs"
-            logs_backup = None
-            if logs_dir.exists():
-                import tempfile
-
-                logs_backup = Path(tempfile.mkdtemp()) / "logs"
-                shutil.copytree(logs_dir, logs_backup)
-
-            # Remove everything in install_path
+            
+            # Remove everything in install_path EXCEPT the active venv and logs
             for child in install_path.iterdir():
-                if child.is_dir():
+                if child.name == "logs":
+                    continue
+                elif child.name == "scripts":
+                    for script_child in child.iterdir():
+                        if script_child.name != "venv":
+                            if script_child.is_dir():
+                                shutil.rmtree(script_child, ignore_errors=True)
+                            else:
+                                script_child.unlink(missing_ok=True)
+                elif child.is_dir():
                     shutil.rmtree(child, ignore_errors=True)
                 else:
                     child.unlink(missing_ok=True)
-
-            # Restore logs
-            if logs_backup and logs_backup.exists():
-                shutil.copytree(logs_backup, logs_dir)
-                shutil.rmtree(logs_backup, ignore_errors=True)
 
             log.sub("Partial installation removed.", style="success")
         else:
