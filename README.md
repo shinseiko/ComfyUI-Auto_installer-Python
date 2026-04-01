@@ -1,6 +1,6 @@
 # 🚀 UmeAiRT's ComfyUI Auto-Installer
 
-![Version](https://img.shields.io/badge/Version-5.1.3-blueviolet.svg)
+![Version](https://img.shields.io/badge/Version-5.1.4-blueviolet.svg)
 ![Python](https://img.shields.io/badge/Python-3.11%20|%203.12%20|%203.13-blue.svg)
 ![Platform](https://img.shields.io/badge/Platform-Windows%20%7C%20Linux%20%7C%20macOS%20%7C%20Docker-orange.svg)
 ![License](https://img.shields.io/badge/License-MIT-brightgreen.svg)
@@ -16,7 +16,7 @@ Cross-platform Python CLI to fully automate the installation, update, and config
   - **Linux**: Full support for NVIDIA (CUDA), AMD (ROCm), and CPU-only fallbacks.
   - **macOS**: Full support leveraging Apple Silicon (MPS).
 - **Flexible Installations**: Supports both `uv` Virtual Environments (`venv`) and Git-tracked `conda`/`venv` integration.
-- **GPU Optimizations** — Installs Triton, SageAttention, and xformers with version compatibility
+- **GPU Optimizations** — Installs Triton, SageAttention (v2 + v3 on Blackwell), and xformers with version compatibility
 - **34 Curated Custom Nodes** — Additive manifest system — never removes user-installed nodes
 - **Model Catalog v3** — 7 model families (FLUX, Z-IMAGE, WAN 2.1, WAN 2.2, HiDream, QWEN, LTX-2) with VRAM-based recommendations and SHA-256 integrity
 - **Multi-Source Downloads** — aria2c accelerated, with HuggingFace + ModelScope fallback
@@ -158,7 +158,7 @@ ComfyUI-Auto_installer/
 │   ├── platform/             # OS abstraction (Windows/Linux/macOS)
 │   └── utils/                # Logging, commands, packaging, GPU detection
 ├── scripts/                  # Config files (dependencies.json, custom_nodes.json)
-├── tests/                    # 406 tests (unit + integration)
+├── tests/                    # 430 tests (unit + integration)
 ├── Install.bat / Install.sh  # Bootstrap entry points
 └── pyproject.toml            # Project metadata (hatchling)
 ```

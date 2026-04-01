@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.4] — Blackwell SageAttention 3 & Data Protection
+
+### Fixed
+
+- **SageAttention 3 never installed on Blackwell GPUs** — The installer stopped after installing the first matching wheel (SageAttention 2), never reaching the SageAttention 3 entry. Now iterates **all** matching wheels, so RTX 50XX users get both SA2 (stable INT8/FP16) and SA3 (experimental FP4). Older GPUs are unaffected (single match per architecture).
+- **Partial install cleanup could delete user data** — Interrupted installations on existing setups (migration, reinstall) could wipe models, outputs, and custom nodes. Added a `_fresh_install` marker file to distinguish fresh installs from migrations, ensuring user data is never deleted during cleanup.
+- **Active venv deleted during partial install cleanup** — The cleanup logic could remove the `scripts/` directory containing the running venv, causing cascading failures. Now explicitly preserves `scripts/venv/` and only removes the parent directory when truly empty.
+- **Empty `scripts/` directory left after cleanup** — Fresh install cleanup removed directory contents but left the empty shell, causing test failures.
+- **Unicode em-dashes in migration script** — `Migrate-from-PS.ps1` used Unicode em-dashes (`—`) which broke on systems with non-UTF-8 PowerShell encoding. Replaced with ASCII hyphens. (Closes #2)
+- **Lint errors** — Moved `Path` import into `TYPE_CHECKING` block (TC003), removed trailing whitespace (W293).
+
+### Changed
+
+- **SageAttention installer checks per-package** — Instead of a single global "already installed?" check, each wheel entry is verified individually, preventing redundant downloads during updates.
+- **430 tests** — up from 426 (all passing).
+
 ## [5.1.3] — Migration Script & Node Requirements Fix
 
 ### Added
