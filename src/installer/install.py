@@ -56,7 +56,6 @@ from __future__ import annotations
 
 import os
 import shutil
-from pathlib import Path
 from typing import TYPE_CHECKING
 
 from src import __version__
@@ -83,6 +82,8 @@ from src.utils.logging import setup_logger
 from src.utils.prompts import confirm
 
 if TYPE_CHECKING:
+    from pathlib import Path
+
     from src.utils.logging import InstallerLogger
 
 TOTAL_STEPS = 13
@@ -330,18 +331,23 @@ def _handle_partial_install(
 
         if confirm("Delete the partial installation and start fresh?"):
             log.item("Cleaning up partial installation...")
-            
+
             # Remove everything in install_path EXCEPT the active venv and logs
             for child in install_path.iterdir():
                 if child.name == "logs":
                     continue
                 elif child.name == "scripts":
+                    # Remove contents except venv; remove dir if empty after
+                    venv_dir = child / "venv"
                     for script_child in child.iterdir():
                         if script_child.name != "venv":
                             if script_child.is_dir():
                                 shutil.rmtree(script_child, ignore_errors=True)
                             else:
                                 script_child.unlink(missing_ok=True)
+                    # If venv was never created, scripts dir is now empty
+                    if not venv_dir.exists() and not any(child.iterdir()):
+                        child.rmdir()
                 elif child.is_dir():
                     shutil.rmtree(child, ignore_errors=True)
                 else:
