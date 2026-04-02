@@ -32,6 +32,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Fixed
 
+- **`nvidia-smi` GPU detection failure** — Added a PyTorch-based fallback for detecting GPUs and computing capabilities. This ensures optimizations like SageAttention are installed correctly and the TUI info menu accurately displays the GPU even when `nvidia-smi` fails or misses details (Fixes #6).
 - **`install_node()` did not reinstall requirements for existing nodes** — During migration or `--reinstall`, nodes already present on disk had their Python dependencies skipped entirely. Now requirements are always installed regardless of clone status. **(Critical fix)**
 - **`update_all_nodes()` ignored user-installed node dependencies** — User-installed nodes (not in manifest) with `requirements.txt` now have their dependencies reinstalled during updates.
 - **`find_uv()` failed to detect local `scripts/uv/`** — Auto-detection now works from CWD when `install_path` is not explicitly passed.

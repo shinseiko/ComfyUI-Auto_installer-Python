@@ -95,6 +95,30 @@ def _get_torch_version(python_exe: Path) -> str | None:
     return None
 
 
+def _get_compute_capability_from_torch(python_exe: Path) -> tuple[int, int] | None:
+    """Get CUDA compute capability from PyTorch as a fallback.
+    
+    Args:
+        python_exe: Path to the venv Python executable.
+        
+    Returns:
+        Compute capability tuple, or None.
+    """
+    result = subprocess.run(
+        [str(python_exe), "-c", 
+         "import torch; c = torch.cuda.get_device_capability() if torch.cuda.is_available() else None; print(f'{c[0]}.{c[1]}' if c else '')"],
+        capture_output=True, text=True, timeout=30,
+    )
+    if result.returncode == 0 and result.stdout.strip():
+        parts = result.stdout.strip().split(".")
+        if len(parts) == 2:
+            try:
+                return (int(parts[0]), int(parts[1]))
+            except ValueError:
+                pass
+    return None
+
+
 # ---------------------------------------------------------------------------
 # Filter + constraint logic
 # ---------------------------------------------------------------------------
@@ -289,6 +313,9 @@ def install_sageattention(
     # Detect compute capability
     cc = get_compute_capability()
     if cc is None:
+        cc = _get_compute_capability_from_torch(python_exe)
+
+    if cc is None:
         log.info("Could not detect GPU compute capability — skipping SageAttention.")
         return
 
@@ -400,6 +427,16 @@ def install_optimizations(
         log: Installer logger for user-facing messages.
     """
     has_nvidia = detect_nvidia_gpu()
+
+    # Fallback to PyTorch sanity check if nvidia-smi failed
+    if not has_nvidia:
+        result = subprocess.run(
+            [str(python_exe), "-c", "import torch; print('YES' if torch.cuda.is_available() and torch.version.cuda else 'NO')"],
+            capture_output=True, text=True, timeout=30
+        )
+        if result.returncode == 0 and "YES" in result.stdout:
+            log.sub("NVIDIA GPU detected via PyTorch fallback.", style="success")
+            has_nvidia = True
 
     if not has_nvidia:
         log.info("No NVIDIA GPU — skipping GPU optimizations.")

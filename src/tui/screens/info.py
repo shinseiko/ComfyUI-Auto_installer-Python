@@ -48,6 +48,8 @@ try:
     info["torch"] = torch.__version__
     if torch.cuda.is_available():
         info["cuda"] = torch.version.cuda
+        info["gpu_name"] = torch.cuda.get_device_name()
+        info["gpu_vram_gib"] = round(torch.cuda.get_device_properties(0).total_memory / (1024**3))
 except ImportError:
     pass
 for pkg in ("sageattention", "triton", "xformers"):
@@ -135,6 +137,9 @@ def _build_info_text(install_path: Path) -> str:
         if gpu:
             lines.append(f"[b]GPU:[/b]            {gpu.name}")
             lines.append(f"[b]VRAM:[/b]           {gpu.vram_gib} GB")
+        elif "gpu_name" in pkg_info:
+            lines.append(f"[b]GPU:[/b]            {pkg_info['gpu_name']} [dim](via PyTorch)[/dim]")
+            lines.append(f"[b]VRAM:[/b]           {pkg_info['gpu_vram_gib']} GB")
         else:
             lines.append("[b]GPU:[/b]            [dim]Not detected[/dim]")
     except Exception:
