@@ -140,7 +140,11 @@ class TestInstallOptimizations:
         from src.installer.optimizations import install_optimizations
 
         log = MagicMock()
-        with patch("src.installer.optimizations.detect_nvidia_gpu", return_value=False):
+        mock_result = MagicMock(returncode=1, stdout="")
+        with (
+            patch("src.installer.optimizations.detect_nvidia_gpu", return_value=False),
+            patch("src.installer.optimizations.subprocess.run", return_value=mock_result),
+        ):
             install_optimizations(MagicMock(), MagicMock(), MagicMock(), MagicMock(), log)
 
         log.info.assert_called_once()
@@ -299,7 +303,10 @@ class TestInstallSageattention:
         from src.installer.optimizations import install_sageattention
         log = MagicMock()
         deps = MagicMock()
-        with patch("src.installer.optimizations.get_compute_capability", return_value=None):
+        with (
+            patch("src.installer.optimizations.get_compute_capability", return_value=None),
+            patch("src.installer.optimizations._get_compute_capability_from_torch", return_value=None),
+        ):
             install_sageattention(MagicMock(), MagicMock(), deps, log)
         log.info.assert_called_once()
 
