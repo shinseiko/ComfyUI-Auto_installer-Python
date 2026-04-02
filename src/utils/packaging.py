@@ -73,7 +73,15 @@ def find_uv(
             if local_uv.is_file():
                 return str(local_uv)
 
-    # 3. Fall back to system PATH
+    # 3. Check next to the current running Python executable
+    # (This is where pip installs `uv` if the user installed the wheel globally/in a venv)
+    from pathlib import Path
+
+    pip_uv = Path(sys.executable).parent / uv_name
+    if pip_uv.is_file():
+        return str(pip_uv)
+
+    # 4. Fall back to system PATH
     path = shutil.which("uv")
     return path
 

@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.8] — UV Pip Dependency
+
+### Fixed
+
+- **Wheel installation failed without `uv`** — Installing the global package via `pip install umeairt-comfyui-installer` bypasses the `Install.bat` bootstrap script, which was responsible for downloading the `uv` executable. The installer then incorrectly crashed at Step 7 because `uv` was missing. We have now added `uv` as a core pip dependency in `pyproject.toml` so it is automatically installed and detected alongside the installer.
+
 ## [5.1.7] — Windows Path Parsing Fix
+
 
 ### Fixed
 

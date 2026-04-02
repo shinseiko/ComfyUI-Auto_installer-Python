@@ -15,10 +15,12 @@ from src.utils.packaging import UvNotFoundError, _ensure_uv, uv_install
 class TestEnsureUv:
     """Tests for the _ensure_uv helper."""
 
+    @patch("sys.executable", "/dummy/bin/python")
     def test_uv_found(self) -> None:
         with patch("shutil.which", return_value="/usr/local/bin/uv"):
             assert _ensure_uv() == "/usr/local/bin/uv"
 
+    @patch("sys.executable", "/dummy/bin/python")
     def test_uv_not_found(self) -> None:
         with patch("shutil.which", return_value=None), pytest.raises(UvNotFoundError, match="uv is not installed"):
             _ensure_uv()
