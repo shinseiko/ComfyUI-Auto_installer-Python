@@ -5,6 +5,18 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.5] — Self-Contained Wheel (fix #7)
+
+### Fixed
+
+- **Wheel install was completely broken** — `pip install umeairt-comfyui-installer` crashed immediately at Step 2 with `FileNotFoundError` because the `scripts/` configuration directory was never included in the wheel. The installer was only functional when run from a source checkout. (Fixes #7)
+
+### Changed
+
+- **`find_source_scripts()` returns `Path | None`** — no longer raises `FileNotFoundError`; callers handle absence gracefully. Lookup order: embedded package data (wheel) → `scripts/` at project root (editable install) → `CWD/scripts/` (CI).
+- **`scripts/` config files embedded in wheel via `force-include`** — `dependencies.json`, `custom_nodes.json`, `environment.yml`, `nunchaku_versions.json`, `comfy.settings.json`, and `banner.txt` are bundled at build time from the `scripts/` directory (single source of truth, no duplication in the repo).
+- **424 tests** — up from 422 (all passing). Added tests for `None` return path, `importlib.resources` fallback, and embedded data detection.
+
 ## [5.1.4] — Blackwell SageAttention 3 & Data Protection
 
 ### Fixed
