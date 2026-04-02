@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.6] — TUI Install Path Fix
+
+### Fixed
+
+- **Install path ignored from TUI** — When launching an installation from the TUI Manager menu, the installer CLI would override the user's chosen installation path with the current working directory. The TUI arguments are now correctly prioritized.
+
 ## [5.1.5] — Self-Contained Wheel (fix #7)
+
 
 ### Fixed
 

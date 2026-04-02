@@ -64,9 +64,14 @@ def main() -> None:
             import subprocess
 
             cmd_args = shlex.split(result)
-            console.print(f"\n[dim]Running: umeairt-comfyui-installer {result} --path {install_path}[/dim]\n")
+            if "--path" not in cmd_args and "-p" not in cmd_args:
+                cmd_args.extend(["--path", str(install_path)])
+
+            # Reconstruct for display
+            cmd_str = " ".join(cmd_args)
+            console.print(f"\n[dim]Running: umeairt-comfyui-installer {cmd_str}[/dim]\n")
             subprocess.run(  # noqa: S603
-                [sys.executable, "-m", "src.cli", *cmd_args, "--path", str(install_path)],
+                [sys.executable, "-m", "src.cli", *cmd_args],
             )
         return
 
