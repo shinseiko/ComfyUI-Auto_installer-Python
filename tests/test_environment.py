@@ -20,13 +20,40 @@ class TestFindSourceScripts:
             assert result.is_dir()
             assert (result / "dependencies.json").exists()
 
-    def test_returns_path_object(self) -> None:
-        """Should return a Path (or raise FileNotFoundError)."""
-        try:
+    def test_returns_path_or_none(self) -> None:
+        """Should return a Path or None — never raise."""
+        result = find_source_scripts()
+        assert result is None or isinstance(result, Path)
+
+    def test_returns_none_when_nothing_found(self, tmp_path: Path) -> None:
+        """Should return None (not raise) when no scripts dir is found."""
+        # Patch importlib.resources.files to raise, and use a tmp_path
+        # that has no scripts/ subdirectory to block all fallbacks.
+        with (
+            patch("src.installer.environment.importlib.resources.files", side_effect=ModuleNotFoundError),
+            patch("src.installer.environment.Path.cwd", return_value=tmp_path),
+        ):
+            # Also patch the package_root candidate to point somewhere without scripts/
+            fake_root = tmp_path / "fake_root"
+            fake_root.mkdir()
+            with patch.object(Path, "resolve", return_value=fake_root / "src" / "installer" / "environment.py"):
+                result = find_source_scripts()
+                assert result is None
+
+    def test_importlib_resources_fallback(self, tmp_path: Path) -> None:
+        """Should return the embedded path when importlib.resources finds it."""
+        fake_scripts = tmp_path / "src" / "scripts"
+        fake_scripts.mkdir(parents=True)
+        (fake_scripts / "dependencies.json").write_text("{}", encoding="utf-8")
+
+        with patch("src.installer.environment.importlib.resources.files") as mock_files:
+            mock_ref = MagicMock()
+            mock_files.return_value = mock_ref
+            mock_ref.__str__ = MagicMock(return_value=str(fake_scripts))
+
             result = find_source_scripts()
-            assert isinstance(result, Path)
-        except OSError:
-            pass
+
+            assert result == fake_scripts
 
 
 class TestCreateVenvWithUv:

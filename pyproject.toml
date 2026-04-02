@@ -6,6 +6,17 @@ build-backend = "hatchling.build"
 packages = ["src"]
 include = ["src/installer/templates/*.template"]
 
+# Bundle scripts/ config files into the wheel at src/scripts/
+# so the wheel is self-contained (fix for issue #7).
+# src/scripts/__init__.py is in the repo; the JSON/yml files come from scripts/ at build time.
+[tool.hatch.build.targets.wheel.force-include]
+"scripts/dependencies.json"      = "src/scripts/dependencies.json"
+"scripts/custom_nodes.json"      = "src/scripts/custom_nodes.json"
+"scripts/environment.yml"        = "src/scripts/environment.yml"
+"scripts/nunchaku_versions.json" = "src/scripts/nunchaku_versions.json"
+"scripts/comfy.settings.json"    = "src/scripts/comfy.settings.json"
+"scripts/banner.txt"             = "src/scripts/banner.txt"
+
 [project]
 name = "umeairt-comfyui-installer"
 version = "5.1.4"

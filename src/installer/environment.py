@@ -12,6 +12,7 @@ configuration files needed for the rest of the install:
 
 from __future__ import annotations
 
+import importlib.resources
 import os
 import shutil
 import subprocess
@@ -303,30 +304,44 @@ def _install_miniconda_windows(
         installer_path.unlink(missing_ok=True)
 
 
-def find_source_scripts() -> Path:
+def find_source_scripts() -> Path | None:
     """Locate the source ``scripts/`` directory containing config files.
 
-    Searches relative to this package: ``../../scripts/`` from ``environment.py``.
-    Falls back to ``Path.cwd() / "scripts"`` to support installed environments (like CI).
+    Search order:
 
-    Raises:
-        FileNotFoundError: If the scripts directory or dependencies.json
-            is missing (enforces package integrity).
+    1. **Wheel install**: embedded ``src.scripts`` package data
+       (via :mod:`importlib.resources`) — self-contained wheel, no local
+       checkout needed.
+    2. **Editable install**: ``../../scripts/`` relative to this file
+       (i.e. the ``scripts/`` directory at the project root).
+    3. **CI / manual run**: ``Path.cwd() / "scripts"`` as a last resort.
+
+    Returns:
+        Path to the scripts directory, or ``None`` if not found.
+        Callers are responsible for handling ``None`` gracefully.
     """
+    # 1. Wheel install: use embedded package data (importlib.resources)
+    try:
+        ref = importlib.resources.files("src.scripts")
+        embedded = Path(str(ref))
+        if (embedded / "dependencies.json").exists():
+            return embedded
+    except (TypeError, AttributeError, ModuleNotFoundError):
+        pass
+
+    # 2. Editable / source install: scripts/ adjacent to the project root
     package_root = Path(__file__).resolve().parent.parent.parent
     candidate = package_root / "scripts"
-
     if candidate.exists() and (candidate / "dependencies.json").exists():
         return candidate
 
+    # 3. CWD fallback (CI, manual run from a checkout)
     cwd_candidate = Path.cwd() / "scripts"
     if cwd_candidate.exists() and (cwd_candidate / "dependencies.json").exists():
         return cwd_candidate
 
-    raise FileNotFoundError(
-        f"Crucial source directory missing: {candidate}. "
-        "Ensure the installer is not separated from its 'scripts' directory."
-    )
+    return None
+
 
 
 # Files needed to bootstrap the install (copied early).
@@ -357,11 +372,14 @@ def provision_scripts(install_path: Path, log: InstallerLogger) -> None:
         log: Installer logger for user-facing messages.
     """
 
-    try:
-        source_dir = find_source_scripts()
-    except FileNotFoundError as e:
-        log.error(str(e))
-        raise InstallerFatalError(str(e)) from None
+    source_dir = find_source_scripts()
+    if source_dir is None:
+        msg = (
+            "Source scripts directory not found. "
+            "If installing from a wheel, please report this as a bug."
+        )
+        log.error(msg)
+        raise InstallerFatalError(msg)
 
     dest_dir = install_path / "scripts"
     dest_dir.mkdir(parents=True, exist_ok=True)
