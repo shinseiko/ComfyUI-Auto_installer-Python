@@ -120,9 +120,9 @@ class InstallScreen(Screen):
         node_tier = str(tier_sel.value) if tier_sel.value is not Select.BLANK else "full"
         cuda = str(cuda_sel.value) if cuda_sel.value is not Select.BLANK else ""
 
-        # Use --path from the input field
-        args = f"install --type {env_type} --nodes {node_tier} --path {install_path}"
+        # Pass path explicitly as an argument
+        args = ["install", "--type", env_type, "--nodes", node_tier, "--path", install_path]
         if cuda:
-            args += f" --cuda {cuda}"
+            args.extend(["--cuda", cuda])
 
         self.app.exit(result=args)

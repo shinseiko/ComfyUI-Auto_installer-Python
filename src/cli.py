@@ -58,12 +58,17 @@ def main() -> None:
             except KeyboardInterrupt:
                 print("\n\n⏹️  ComfyUI stopped.")
 
-        elif isinstance(result, str):
+        elif isinstance(result, (str, list)):
             # CLI command (install, update, etc.)
             import shlex
             import subprocess
 
-            cmd_args = shlex.split(result)
+            cmd_args = (
+                shlex.split(result, posix=(sys.platform != "win32"))
+                if isinstance(result, str)
+                else result.copy()
+            )
+
             if "--path" not in cmd_args and "-p" not in cmd_args:
                 cmd_args.extend(["--path", str(install_path)])
 

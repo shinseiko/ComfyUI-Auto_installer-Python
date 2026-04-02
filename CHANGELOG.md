@@ -5,7 +5,14 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [5.1.7] — Windows Path Parsing Fix
+
+### Fixed
+
+- **Windows install path backslashes removed** — Fixed a bug where standard Windows paths with backslashes (e.g. `D:\Dev\ComfyUI`) had their backslashes stripped by `shlex.split` under the hood, resulting in invalid paths like `D:DevComfyUI`. TUI now passes arguments as a list to avoid shell parsing issues entirely.
+
 ## [5.1.6] — TUI Install Path Fix
+
 
 ### Fixed
 
