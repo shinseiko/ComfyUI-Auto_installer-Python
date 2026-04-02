@@ -97,16 +97,20 @@ def _get_torch_version(python_exe: Path) -> str | None:
 
 def _get_compute_capability_from_torch(python_exe: Path) -> tuple[int, int] | None:
     """Get CUDA compute capability from PyTorch as a fallback.
-    
+
     Args:
         python_exe: Path to the venv Python executable.
-        
+
     Returns:
         Compute capability tuple, or None.
     """
+    code = (
+        "import torch; "
+        "c = torch.cuda.get_device_capability() if torch.cuda.is_available() else None; "
+        "print(f'{c[0]}.{c[1]}' if c else '')"
+    )
     result = subprocess.run(
-        [str(python_exe), "-c", 
-         "import torch; c = torch.cuda.get_device_capability() if torch.cuda.is_available() else None; print(f'{c[0]}.{c[1]}' if c else '')"],
+        [str(python_exe), "-c", code],
         capture_output=True, text=True, timeout=30,
     )
     if result.returncode == 0 and result.stdout.strip():
@@ -430,8 +434,9 @@ def install_optimizations(
 
     # Fallback to PyTorch sanity check if nvidia-smi failed
     if not has_nvidia:
+        code = "import torch; print('YES' if torch.cuda.is_available() and torch.version.cuda else 'NO')"
         result = subprocess.run(
-            [str(python_exe), "-c", "import torch; print('YES' if torch.cuda.is_available() and torch.version.cuda else 'NO')"],
+            [str(python_exe), "-c", code],
             capture_output=True, text=True, timeout=30
         )
         if result.returncode == 0 and "YES" in result.stdout:
