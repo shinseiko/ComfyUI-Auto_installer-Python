@@ -8,7 +8,8 @@
     }
   },
   "mirrors": {
-    "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/": "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/"
+    "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/": "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/",
+    "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/": "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/"
   },
   "tools": {
     "vs_build_tools": {
@@ -17,11 +18,11 @@
       "arguments": "--wait --quiet --norestart --add Microsoft.VisualStudio.Workload.VCTools --includeRecommended"
     },
     "git_windows": {
-      "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/bin/Git-2.53.0.2-64-bit.exe",
+      "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/bin/Git-2.53.0.2-64-bit.exe",
       "sha256": "194362cf24cd0db4b573096108460a34c7f80a20c5f2aa60d06ef817be9f73a1"
     },
     "aria2_windows": {
-      "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/bin/aria2-1.37.0-win-64bit-build1.zip",
+      "url": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/bin/aria2-1.37.0-win-64bit-build1.zip",
       "sha256": "67d015301eef0b612191212d564c5bb0a14b5b9c4796b76454276a4d28d9b288"
     },
     "miniconda_windows": {
@@ -62,18 +63,18 @@
       {
         "name": "nunchaku",
         "versions": {
-          "linux_cu130_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-linux_x86_64.whl",
-          "linux_cu130_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-linux_x86_64.whl",
-          "linux_cu130_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-linux_x86_64.whl",
-          "linux_cu128_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp311-cp311-linux_x86_64.whl",
-          "linux_cu128_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp312-cp312-linux_x86_64.whl",
-          "linux_cu128_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp313-cp313-linux_x86_64.whl",
-          "cu130_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-win_amd64.whl",
-          "cu130_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-win_amd64.whl",
-          "cu130_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl",
-          "cu128_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp311-cp311-win_amd64.whl",
-          "cu128_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp312-cp312-win_amd64.whl",
-          "cu128_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp313-cp313-win_amd64.whl"
+          "linux_cu130_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-linux_x86_64.whl",
+          "linux_cu130_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-linux_x86_64.whl",
+          "linux_cu130_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-linux_x86_64.whl",
+          "linux_cu128_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp311-cp311-linux_x86_64.whl",
+          "linux_cu128_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp312-cp312-linux_x86_64.whl",
+          "linux_cu128_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp313-cp313-linux_x86_64.whl",
+          "cu130_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp311-cp311-win_amd64.whl",
+          "cu130_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp312-cp312-win_amd64.whl",
+          "cu130_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu13.0torch2.10-cp313-cp313-win_amd64.whl",
+          "cu128_cp311": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp311-cp311-win_amd64.whl",
+          "cu128_cp312": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp312-cp312-win_amd64.whl",
+          "cu128_cp313": "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku-1.2.1+cu12.8torch2.10-cp313-cp313-win_amd64.whl"
         }
       },
       {

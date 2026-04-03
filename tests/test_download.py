@@ -57,11 +57,11 @@ class TestDownloadFileFallback:
         from src.utils.download import download_file
 
         dest = tmp_path / "test.whl"
-        hf_url = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/whl/nunchaku.whl"
+        hf_url = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/whl/nunchaku.whl"
         expected_ms = "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/whl/nunchaku.whl"
 
         mirrors = {
-            "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/": "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/"
+            "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/": "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/"
         }
 
         mock_httpx = MagicMock()

@@ -1,12 +1,12 @@
 """
-System prerequisites â€” Steps 1-2.
+System prerequisites â€?Steps 1-2.
 
 Checks and installs external tools required before the Python
 environment or ComfyUI can be set up:
 
 - **Git**: version check against ``MIN_GIT_VERSION``, auto-install on Windows,
   or OS-specific upgrade instructions.
-- **aria2**: 3-tier search (system PATH â†’ local ``scripts/aria2/`` â†’
+- **aria2**: 3-tier search (system PATH â†?local ``scripts/aria2/`` â†?
   download on Windows / suggest on Linux).
 
 Typical usage::
@@ -75,7 +75,7 @@ def check_prerequisites(log: InstallerLogger) -> bool:
 
     # Check Git
     if check_command_exists("git"):
-        git_ver_str = subprocess.run(  # returncode not checked â€” version is optional info
+        git_ver_str = subprocess.run(  # returncode not checked â€?version is optional info
             ["git", "--version"], capture_output=True, text=True, timeout=10
         ).stdout.strip()
         git_ver = _parse_git_version(git_ver_str)
@@ -109,7 +109,7 @@ def check_prerequisites(log: InstallerLogger) -> bool:
 def install_git(
     log: InstallerLogger,
     *,
-    git_url: str = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/bin/Git-2.53.0.2-64-bit.exe",
+    git_url: str = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/bin/Git-2.53.0.2-64-bit.exe",
     git_sha256: str = "",
     mirrors: dict[str, str] | None = None,
 ) -> bool:
@@ -133,7 +133,7 @@ def install_git(
         return False
 
     if not confirm("Git is required. Would you like to install it automatically?"):
-        log.error("Installation aborted â€” Git is mandatory.")
+        log.error("Installation aborted â€?Git is mandatory.")
         return False
 
     log.item("Downloading Git for Windows...")
@@ -231,7 +231,7 @@ def _download_aria2_windows(
     install_path: Path,
     log: InstallerLogger,
     *,
-    aria2_url: str = "https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/bin/aria2-1.37.0-win-64bit-build1.zip",
+    aria2_url: str = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/bin/aria2-1.37.0-win-64bit-build1.zip",
     aria2_sha256: str = "",
     mirrors: dict[str, str] | None = None,
 ) -> bool:

@@ -28,11 +28,11 @@ class ToolsConfig(BaseModel):
 
     vs_build_tools: ToolConfig = Field(default_factory=ToolConfig)
     git_windows: ToolConfig = Field(default_factory=lambda: ToolConfig(
-        url="https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/bin/Git-2.53.0.2-64-bit.exe",
+        url="https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/bin/Git-2.53.0.2-64-bit.exe",
         sha256="194362cf24cd0db4b573096108460a34c7f80a20c5f2aa60d06ef817be9f73a1",
     ))
     aria2_windows: ToolConfig = Field(default_factory=lambda: ToolConfig(
-        url="https://huggingface.co/UmeAiRT/ComfyUI-Auto_installer/resolve/main/bin/aria2-1.37.0-win-64bit-build1.zip",
+        url="https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/bin/aria2-1.37.0-win-64bit-build1.zip",
         sha256="67d015301eef0b612191212d564c5bb0a14b5b9c4796b76454276a4d28d9b288",
     ))
     miniconda_windows: ToolConfig = Field(default_factory=lambda: ToolConfig(
@@ -74,10 +74,10 @@ class WheelConfig(BaseModel):
         """Pick the wheel matching the running Python and CUDA version.
 
         Resolution order for versioned wheels:
-        1. ``{platform}_{cuda_tag}_{cpython_tag}`` â€” OS + CUDA + Python match
-        2. ``{cuda_tag}_{cpython_tag}`` â€” OS-agnostic CUDA + Python match
-        3. ``{platform}_{cpython_tag}`` â€” OS + Python match
-        4. ``{cpython_tag}`` â€” OS-agnostic Python fallback
+        1. ``{platform}_{cuda_tag}_{cpython_tag}`` â€?OS + CUDA + Python match
+        2. ``{cuda_tag}_{cpython_tag}`` â€?OS-agnostic CUDA + Python match
+        3. ``{platform}_{cpython_tag}`` â€?OS + Python match
+        4. ``{cpython_tag}`` â€?OS-agnostic Python fallback
 
         Args:
             python_version: (major, minor) tuple, e.g. (3, 13).
@@ -172,7 +172,7 @@ class PipPackages(BaseModel):
         """
         if isinstance(self.torch, dict):
             return self.torch.get(cuda_tag)
-        # Legacy single TorchConfig â€” return it for any tag
+        # Legacy single TorchConfig â€?return it for any tag
         return self.torch
 
     @property
