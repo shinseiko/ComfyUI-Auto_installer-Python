@@ -8,7 +8,6 @@
     }
   },
   "mirrors": {
-    "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/": "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/",
     "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/": "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/"
   },
   "tools": {

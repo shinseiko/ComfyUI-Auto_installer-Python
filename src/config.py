@@ -74,10 +74,10 @@ class WheelConfig(BaseModel):
         """Pick the wheel matching the running Python and CUDA version.
 
         Resolution order for versioned wheels:
-        1. ``{platform}_{cuda_tag}_{cpython_tag}`` â€?OS + CUDA + Python match
-        2. ``{cuda_tag}_{cpython_tag}`` â€?OS-agnostic CUDA + Python match
-        3. ``{platform}_{cpython_tag}`` â€?OS + Python match
-        4. ``{cpython_tag}`` â€?OS-agnostic Python fallback
+        1. ``{platform}_{cuda_tag}_{cpython_tag}`` â€” OS + CUDA + Python match
+        2. ``{cuda_tag}_{cpython_tag}`` â€” OS-agnostic CUDA + Python match
+        3. ``{platform}_{cpython_tag}`` â€” OS + Python match
+        4. ``{cpython_tag}`` â€” OS-agnostic Python fallback
 
         Args:
             python_version: (major, minor) tuple, e.g. (3, 13).
@@ -172,7 +172,7 @@ class PipPackages(BaseModel):
         """
         if isinstance(self.torch, dict):
             return self.torch.get(cuda_tag)
-        # Legacy single TorchConfig â€?return it for any tag
+        # Legacy single TorchConfig â€” return it for any tag
         return self.torch
 
     @property

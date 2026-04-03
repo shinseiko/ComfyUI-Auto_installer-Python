@@ -1,12 +1,12 @@
 """
-System prerequisites â€?Steps 1-2.
+System prerequisites â€” Steps 1-2.
 
 Checks and installs external tools required before the Python
 environment or ComfyUI can be set up:
 
 - **Git**: version check against ``MIN_GIT_VERSION``, auto-install on Windows,
   or OS-specific upgrade instructions.
-- **aria2**: 3-tier search (system PATH â†?local ``scripts/aria2/`` â†?
+- **aria2**: 3-tier search (system PATH â†’ local ``scripts/aria2/`` â†’
   download on Windows / suggest on Linux).
 
 Typical usage::
@@ -75,7 +75,7 @@ def check_prerequisites(log: InstallerLogger) -> bool:
 
     # Check Git
     if check_command_exists("git"):
-        git_ver_str = subprocess.run(  # returncode not checked â€?version is optional info
+        git_ver_str = subprocess.run(  # returncode not checked â€” version is optional info
             ["git", "--version"], capture_output=True, text=True, timeout=10
         ).stdout.strip()
         git_ver = _parse_git_version(git_ver_str)
@@ -133,7 +133,7 @@ def install_git(
         return False
 
     if not confirm("Git is required. Would you like to install it automatically?"):
-        log.error("Installation aborted â€?Git is mandatory.")
+        log.error("Installation aborted â€” Git is mandatory.")
         return False
 
     log.item("Downloading Git for Windows...")
