@@ -255,7 +255,7 @@ Write-Host ""
 Write-Host "[Step 4/6] Downloading Python installer..." -ForegroundColor Yellow
 
 $InstallerDir = Join-Path $env:TEMP "ComfyUI-Auto_installer"
-$RepoUrl      = "https://github.com/UmeAiRT/ComfyUI-Auto_installer-Python.git"
+$RepoUrl      = "https://gitlab.com/UmeAiRT-Studio/ComfyUI-Auto_installer-Python.git"
 $Branch        = "main"
 $HF_ZIP       = "https://huggingface.co/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/main/releases/ComfyUI-Auto_installer-latest.zip"
 $MS_ZIP       = "https://www.modelscope.ai/datasets/UmeAiRT/ComfyUI-Auto-Installer-Assets/resolve/master/releases/ComfyUI-Auto_installer-latest.zip"

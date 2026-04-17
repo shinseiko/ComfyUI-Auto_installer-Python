@@ -1,8 +1,8 @@
 site_name: ComfyUI Auto-Installer
 site_description: Cross-platform automated installer for ComfyUI — full documentation
 site_url: https://comfyui-installer.umeai.art/
-repo_url: https://github.com/UmeAiRT/ComfyUI-Auto_installer-Python
-repo_name: UmeAiRT/ComfyUI-Auto_installer-Python
+repo_url: https://gitlab.com/UmeAiRT-Studio/ComfyUI-Auto_installer-Python
+repo_name: UmeAiRT-Studio/ComfyUI-Auto_installer-Python
 
 theme:
   name: material
@@ -33,7 +33,7 @@ theme:
     - search.highlight
     - toc.follow
   icon:
-    repo: fontawesome/brands/github
+    repo: fontawesome/brands/gitlab
 
 plugins:
   - search
@@ -115,5 +115,5 @@ nav:
 
 extra:
   social:
-    - icon: fontawesome/brands/github
-      link: https://github.com/UmeAiRT
+    - icon: fontawesome/brands/gitlab
+      link: https://gitlab.com/UmeAiRT-Studio
