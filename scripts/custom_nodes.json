@@ -18,14 +18,14 @@
         },
         {
             "name": "ComfyUI-UmeAiRT-Sync",
-            "url": "https://github.com/UmeAiRT/ComfyUI-UmeAiRT-Sync.git",
+            "url": "https://gitlab.com/UmeAiRT-Studio/ComfyUI-UmeAiRT-Sync.git",
             "tier": "umeairt",
             "requirements": "requirements.txt",
             "note": "Workflows auto-update sync"
         },
         {
             "name": "ComfyUI-UmeAiRT-Toolkit",
-            "url": "https://github.com/UmeAiRT/ComfyUI-UmeAiRT-Toolkit",
+            "url": "https://gitlab.com/UmeAiRT-Studio/ComfyUI-UmeAiRT-Toolkit",
             "tier": "umeairt",
             "requirements": "requirements.txt"
         },

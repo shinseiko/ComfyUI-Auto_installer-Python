@@ -196,7 +196,7 @@ class RepositoriesConfig(BaseModel):
         default_factory=lambda: RepositoryConfig(url="https://github.com/comfyanonymous/ComfyUI.git")
     )
     workflows: RepositoryConfig = Field(
-        default_factory=lambda: RepositoryConfig(url="https://github.com/UmeAiRT/ComfyUI-Workflows")
+        default_factory=lambda: RepositoryConfig(url="https://gitlab.com/UmeAiRT-Studio/ComfyUI-Workflows")
     )
 
 
@@ -286,10 +286,11 @@ class InstallerSettings(BaseModel):
     listen_address: str = "127.0.0.1"  # Fixed! Was 0.0.0.0 in PowerShell version
     listen_port: int = 8188
 
-    # GitHub source (for forks)
-    gh_user: str = "UmeAiRT"
-    gh_reponame: str = "ComfyUI-Auto_installer"
-    gh_branch: str = "main"
+    # Git source (for forks)
+    git_host: str = "gitlab.com"
+    git_group: str = "UmeAiRT-Studio"
+    git_reponame: str = "ComfyUI-Auto_installer-Python"
+    git_branch: str = "main"
 
     # Installation
     install_path: Path = Field(default_factory=lambda: Path.cwd())
