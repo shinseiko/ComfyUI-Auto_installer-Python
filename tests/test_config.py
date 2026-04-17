@@ -28,7 +28,7 @@ class TestInstallerSettings:
         assert settings.install_type == "venv"
         assert settings.package_manager == "uv"
         assert settings.use_sage_attention is True
-        assert settings.gh_user == "UmeAiRT"
+        assert settings.git_group == "UmeAiRT-Studio"
 
     def test_load_missing_file(self, tmp_config_file: Path) -> None:
         """Loading a missing file returns defaults."""
@@ -40,14 +40,14 @@ class TestInstallerSettings:
         original = InstallerSettings(
             listen_address="192.168.1.100",
             listen_port=9090,
-            gh_user="MyFork",
+            git_group="MyFork",
         )
         save_settings(original, tmp_config_file)
 
         loaded = load_settings(tmp_config_file)
         assert loaded.listen_address == "192.168.1.100"
         assert loaded.listen_port == 9090
-        assert loaded.gh_user == "MyFork"
+        assert loaded.git_group == "MyFork"
         # Other fields should keep defaults
         assert loaded.install_type == "venv"
 

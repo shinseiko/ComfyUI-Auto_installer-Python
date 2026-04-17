@@ -61,6 +61,8 @@ test:
   parallel:
     matrix:
       - PYTHON_VERSION: ["3.11", "3.12", "3.13"]
+  before_script:
+    - apt-get update -qq && apt-get install -y -qq git > /dev/null 2>&1
   script:
     - pip install -e ".[dev]"
     - pytest tests/ -v --tb=long -m "not integration"
