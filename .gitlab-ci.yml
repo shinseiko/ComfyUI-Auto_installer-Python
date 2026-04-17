@@ -7,6 +7,7 @@ stages:
   - lint
   - test
   - docs
+  - mirror
 
 # ── Global defaults ─────────────────────────────────────────────
 default:
@@ -89,3 +90,15 @@ pages:
   rules:
     - if: $CI_COMMIT_BRANCH == "main"
 
+# ── Mirror → Codeberg ──────────────────────────────────────────
+mirror-codeberg:
+  stage: mirror
+  image: alpine:latest
+  allow_failure: true
+  before_script:
+    - apk add --no-cache git
+  script:
+    - git push --mirror https://oauth2:$CODEBERG_TOKEN@codeberg.org/UmeAiRT/$CI_PROJECT_NAME.git
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
