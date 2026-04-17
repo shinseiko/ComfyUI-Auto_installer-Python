@@ -3,6 +3,11 @@
 # Replaces: .github/workflows/ci.yml, integration.yml, docs.yml
 # ============================================================================
 
+include:
+  - template: Jobs/SAST.gitlab-ci.yml
+  - template: Jobs/Secret-Detection.gitlab-ci.yml
+  - template: Jobs/Dependency-Scanning.gitlab-ci.yml
+
 stages:
   - lint
   - test
@@ -35,28 +40,7 @@ lint:
     - pip install ruff
     - ruff check src/ tests/ --config pyproject.toml
 
-# ── Security (Bandit) ───────────────────────────────────────────
-security:
-  stage: lint
-  image: python:3.12-slim
-  script:
-    - pip install bandit
-    - bandit -r src/ -c pyproject.toml -ll
 
-# ── Dependency Audit ────────────────────────────────────────────
-audit:
-  stage: lint
-  image: python:3.12-slim
-  allow_failure: true  # Upstream CVEs should not block CI
-  script:
-    - pip install pip-audit
-    - pip install -e ".[dev]"
-    - >-
-      pip-audit --desc
-      --ignore-vuln CVE-2025-8869
-      --ignore-vuln CVE-2026-1703
-      --ignore-vuln ECHO-ffe1-1d3c-d9bc
-      --ignore-vuln ECHO-7db2-03aa-5591
 
 # ── Unit Tests (Python matrix) ──────────────────────────────────
 test:
