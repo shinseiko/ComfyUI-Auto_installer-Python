@@ -44,7 +44,7 @@ def sample_dependencies_json(tmp_path: Path) -> Path:
     data = {
         "repositories": {
             "comfyui": {"url": "https://github.com/comfyanonymous/ComfyUI.git"},
-            "workflows": {"url": "https://github.com/UmeAiRT/ComfyUI-Workflows"},
+            "workflows": {"url": "https://gitlab.com/UmeAiRT-Studio/ComfyUI-Workflows"},
         },
         "tools": {
             "vs_build_tools": {

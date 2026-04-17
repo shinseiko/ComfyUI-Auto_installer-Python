@@ -4,4 +4,4 @@
 #
 # NOTE: These files mirror scripts/ at the project root.
 # When updating configs, update BOTH locations.
-# See: https://github.com/UmeAiRT/ComfyUI-Auto_installer-Python/issues/7
+# See: https://gitlab.com/UmeAiRT-Studio/ComfyUI-Auto_installer-Python/-/issues/7
