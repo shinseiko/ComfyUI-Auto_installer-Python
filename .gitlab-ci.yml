@@ -94,7 +94,9 @@ pages:
 # ── Mirror → Codeberg (fallback for when Ultimate expires) ──────
 mirror-codeberg:
   stage: mirror
-  image: alpine/git
+  image: alpine:latest
+  before_script:
+    - apk add --no-cache git
   script:
     - git push --mirror https://oauth2:$CODEBERG_TOKEN@codeberg.org/UmeAiRT/$CI_PROJECT_NAME.git
   rules:
