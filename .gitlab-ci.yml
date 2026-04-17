@@ -1,0 +1,102 @@
+# ============================================================================
+# GitLab CI — ComfyUI-Auto_installer-Python
+# Replaces: .github/workflows/ci.yml, integration.yml, docs.yml
+# ============================================================================
+
+stages:
+  - lint
+  - test
+  - docs
+  - release
+  - mirror
+
+# ── Global defaults ─────────────────────────────────────────────
+default:
+  cache:
+    key: pip-${CI_JOB_IMAGE}
+    paths:
+      - .pip-cache/
+
+variables:
+  PIP_CACHE_DIR: "$CI_PROJECT_DIR/.pip-cache"
+
+workflow:
+  rules:
+    - if: $CI_COMMIT_MESSAGE =~ /\[skip ci\]/
+      when: never
+    - if: $CI_PIPELINE_SOURCE == "merge_request_event"
+    - if: $CI_COMMIT_BRANCH == "main"
+    - if: $CI_COMMIT_TAG
+
+# ── Lint (Ruff) ─────────────────────────────────────────────────
+lint:
+  stage: lint
+  image: python:3.12-slim
+  script:
+    - pip install ruff
+    - ruff check src/ tests/ --config pyproject.toml
+
+# ── Security (Bandit) ───────────────────────────────────────────
+security:
+  stage: lint
+  image: python:3.12-slim
+  script:
+    - pip install bandit
+    - bandit -r src/ -c pyproject.toml -ll
+
+# ── Dependency Audit ────────────────────────────────────────────
+audit:
+  stage: lint
+  image: python:3.12-slim
+  allow_failure: true  # Upstream CVEs should not block CI
+  script:
+    - pip install pip-audit
+    - pip install -e ".[dev]"
+    - pip-audit --desc
+
+# ── Unit Tests (Python matrix) ──────────────────────────────────
+test:
+  stage: test
+  image: python:${PYTHON_VERSION}-slim
+  parallel:
+    matrix:
+      - PYTHON_VERSION: ["3.11", "3.12", "3.13"]
+  script:
+    - pip install -e ".[dev]"
+    - pytest tests/ -v --tb=long -m "not integration"
+
+# ── Coverage ────────────────────────────────────────────────────
+coverage:
+  stage: test
+  image: python:3.12-slim
+  needs: ["test"]
+  script:
+    - pip install -e ".[dev]" coverage
+    - coverage run --source=src --omit="src/tui/*" -m pytest tests/ -q -m "not integration"
+    - coverage report -m --skip-covered --fail-under=70
+  coverage: '/^TOTAL\s+.*\s+(\d+)%$/'
+
+# ── MkDocs → GitLab Pages ──────────────────────────────────────
+pages:
+  stage: docs
+  image: python:3.12-slim
+  script:
+    - pip install -e ".[docs]"
+    - mkdocs build --strict --site-dir public
+  artifacts:
+    paths:
+      - public
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+
+# ── Mirror → Codeberg (fallback for when Ultimate expires) ──────
+mirror-codeberg:
+  stage: mirror
+  image: alpine/git
+  script:
+    - git push --mirror https://oauth2:$CODEBERG_TOKEN@codeberg.org/UmeAiRT/$CI_PROJECT_NAME.git
+  rules:
+    - if: $CI_COMMIT_BRANCH == "main"
+      when: manual
+    - if: $CI_COMMIT_TAG
+      when: manual
